@@ -1,4 +1,3 @@
-const fs = require('fs');
 const dom = require('@xmldom/xmldom').DOMParser;
 const prefixhelper = require('../helper/prefixHelper.js');
 const functionHelper = require('../function/function.js');
@@ -163,12 +162,11 @@ const readFileStringSimple = (source, options) => {
   let string;
   if (options && options.inputFiles) {
     if (!options.inputFiles[source]) {
-      throw (`File ${source} not specified!`);
+      throw (`File ${source} not specified! 1`);
     }
     string = options.inputFiles[source];
   } else {
-    consoleLogIf('Reading file...', options);
-    string = fs.readFileSync(source, 'utf-8');
+    throw (`File ${source} not specified! 2`);
   }
   return string;
 };

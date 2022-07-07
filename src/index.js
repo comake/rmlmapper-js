@@ -1,4 +1,3 @@
-const fs = require('fs');
 const jsonld = require('jsonld');
 const mapfile = require('./mapfile/mapfileParser.js');
 const logicalSource = require('./input-parser/logicalSourceParser.js');
@@ -8,25 +7,7 @@ const replaceHelper = require('./helper/replace.js');
 const prefixhelper = require('./helper/prefixHelper.js');
 const helper = require('./input-parser/helper.js');
 
-const parseFile = async (pathInput, pathOutput, options = {}) => {
-  cleanCache(options);
-  const contents = fs.readFileSync(pathInput, 'utf8');
-
-  const res = await mapfile.expandedJsonMap(contents, options);
-  const output = await process(res, options);
-  const out = await clean(output, options);
-  if (options && options.toRDF && options.toRDF === true) {
-    const rdf = await jsonld.toRDF(out, { format: 'application/n-quads' });
-    helper.consoleLogIf(`Writing to ${pathOutput}`, options);
-    fs.writeFileSync(pathOutput, rdf);
-    return rdf;
-  }
-  helper.consoleLogIf(`Writing to ${pathOutput}`, options);
-  fs.writeFileSync(pathOutput, JSON.stringify(out, null, 2));
-  return out;
-};
-
-const parseFileLive = async (mapFile, inputFiles, options = {}) => {
+const parseFile = async (mapFile, inputFiles, options = {}) => {
   cleanCache(options);
   const res = await mapfile.expandedJsonMap(mapFile);
   options.inputFiles = inputFiles;
@@ -202,4 +183,7 @@ const cleanCache = (data) => {
 };
 
 module.exports.parseFile = parseFile;
-module.exports.parseFileLive = parseFileLive;
+module.exports.parseFileLive = parseFile;
+module.exports.process = process;
+module.exports.cleanCache = cleanCache;
+module.exports.clean = clean;
