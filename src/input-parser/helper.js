@@ -159,16 +159,10 @@ const addToObjInId = (obj, pred, data) => {
 };
 
 const readFileStringSimple = (source, options) => {
-  let string;
-  if (options && options.inputFiles) {
-    if (!options.inputFiles[source]) {
-      throw (`File ${source} not specified! 1`);
-    }
-    string = options.inputFiles[source];
-  } else {
-    throw (`File ${source} not specified! 2`);
+  if (options && options.inputFiles && options.inputFiles[source]) {
+    return options.inputFiles[source];
   }
-  return string;
+  throw (`File ${source} not specified!`);
 };
 
 const readFileJSONSimple = (source, options) => {
