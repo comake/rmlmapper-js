@@ -8,7 +8,7 @@
 
 
 <#LOGICALSOURCE>
-rml:source "./tests/datatype/input.json";
+rml:source "./tests/constantIri/input.json";
 rml:referenceFormulation ql:JSONPath;
 rml:iterator "$".
 
@@ -41,7 +41,3 @@ rr:predicateObjectMap [
      rr:termType rr:IRI;
     ];
 ] .
-
-
-
-
