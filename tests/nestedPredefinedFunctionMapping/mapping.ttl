@@ -11,7 +11,7 @@
 
 
 <#LOGICALSOURCE>
-rml:source "./tests/predefinedFunctionMapping/input.json";
+rml:source "./tests/nestedPredefinedFunctionMapping/input.json";
 rml:referenceFormulation ql:JSONPath;
 rml:iterator "$".
 
