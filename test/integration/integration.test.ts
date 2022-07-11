@@ -923,7 +923,7 @@ describe('Parsing', (): void => {
   });
 
   it('datatype test.', async(): Promise<void> => {
-    const result = await parseFile(
+    let result = await parseFile(
       './test/assets/datatype/mapping.ttl',
       [ './test/assets/datatype/input.json' ],
       './test/assets/datatype/out.json',
@@ -936,14 +936,14 @@ describe('Parsing', (): void => {
     assert.equal((result[0]['http://mytestprefix.org/url'] as NodeObject)['@value'], 'http://example.com/foo');
     assert.equal((result[0]['http://mytestprefix.org/url'] as NodeObject)['@type'], 'http://www.w3.org/2001/XMLSchema#anyURI');
 
-    const result2 = await parseFile(
+    const stringResult = await parseFile(
       './test/assets/datatype/mapping.ttl',
       [ './test/assets/datatype/input.json' ],
       './test/assets/datatype/out.nq',
       { toRDF: true },
-    ) as NodeObject[];
+    ) as string;
 
-    assert.equal(result2, [
+    assert.equal(stringResult, [
       `_:b0 <http://mytestprefix.org/age> "15"^^<http://www.w3.org/2001/XMLSchema#integer> .`,
       `_:b0 <http://mytestprefix.org/name> "Tom A." .`,
       `_:b0 <http://mytestprefix.org/url> "http://example.com/foo"^^<http://www.w3.org/2001/XMLSchema#anyURI> .`,
@@ -951,16 +951,16 @@ describe('Parsing', (): void => {
       '',
     ].join('\n'));
 
-    const result3 = await parseFile(
+    result = await parseFile(
       './test/assets/datatype/mapping.ttl',
       [ './test/assets/datatype/input.json' ],
       './test/assets/datatype/out.json',
       { compress: { xsd: 'http://www.w3.org/2001/XMLSchema#' }},
-    ) as NodeObject;
+    ) as NodeObject[];
 
-    assert.equal((result3['http://mytestprefix.org/name'] as NodeObject)['@type'], 'xsd:string');
-    assert.equal((result3['http://mytestprefix.org/age'] as NodeObject)['@type'], 'xsd:integer');
-    assert.equal((result3['http://mytestprefix.org/url'] as NodeObject)['@type'], 'xsd:anyURI');
+    assert.equal((result[0]['http://mytestprefix.org/name'] as NodeObject)['@type'], 'xsd:string');
+    assert.equal((result[0]['http://mytestprefix.org/age'] as NodeObject)['@type'], 'xsd:integer');
+    assert.equal((result[0]['http://mytestprefix.org/url'] as NodeObject)['@type'], 'xsd:anyURI');
   });
 
   // ******************* MISC

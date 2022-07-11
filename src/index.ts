@@ -183,7 +183,10 @@ export async function process(res: Res, options: ProcessOptions): Promise<any> {
   return output;
 }
 
-export async function clean(output: any, options: any): Promise<any> {
+export async function clean(
+  output: jsonld.NodeObject | jsonld.NodeObject[],
+  options: any,
+): Promise<jsonld.NodeObject[]> {
   output = objectHelper.removeMeta(output);
   objectHelper.removeEmpty(output);
 
@@ -193,6 +196,7 @@ export async function clean(output: any, options: any): Promise<any> {
     helper.consoleLogIf('Replacing BlankNodes..', options);
     output = replaceHelper.replace(output);
   }
+
   if (options?.compress) {
     const compacted = await jsonld.compact(output, options.compress);
     const context = compacted['@context'];
@@ -205,8 +209,9 @@ export async function clean(output: any, options: any): Promise<any> {
       return graph;
     }
     (compacted['@context'] as jsonld.ContextDefinition)['@language'] = options.language;
-    return compacted;
+    return [ compacted ];
   }
+
   if (options?.language) {
     if (Array.isArray(output)) {
       output.forEach((subOutput: Record<string, any>): void => {
@@ -218,8 +223,8 @@ export async function clean(output: any, options: any): Promise<any> {
       };
     }
   }
-  helper.consoleLogIf('FINISHED', options);
-  return output;
+
+  return Array.isArray(output) ? output : [ output ];
 }
 
 export function cleanCache(data: Record<string, any>): void {
@@ -232,7 +237,7 @@ export async function parse(
   mapping: string,
   inputFiles: Record<string, string>,
   options: ParseOptions = {},
-): Promise<string | jsonld.NodeObject | jsonld.NodeObject[]> {
+): Promise<string | jsonld.NodeObject[]> {
   cleanCache(options);
   const res = await mapfile.expandedJsonMap(mapping) as Res;
   const output = await process(res, { ...options, inputFiles });
