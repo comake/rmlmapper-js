@@ -1,11 +1,3 @@
-ttg_vk_thueris.xml
-ttg_vk_thueris_modified.xml
-outjson.json
-test.json
 /node_modules
-chunk-12.xml
-.idea/
-.nyc_output/
-/examples
-.vscode
 .npmrc
+/coverage
