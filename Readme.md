@@ -1,8 +1,8 @@
 # rmlmapper-js
 
-This library is a javascript RML mapper implementation for the [RDF mapping language (RML)](http://rml.io/spec.html).
+This library is a javascript implementation of a mapper for the [RDF mapping language (RML)](http://rml.io/spec.html).
 
-As of now, this library is almost an exact copy of an old javascript RML mapper, [RocketRML](https://github.com/semantifyit/RocketRML). RocketRML is not not actively maintained aside from occasional bug fixes and suffers from poor code quality recuding its maintainability. We are planning lots of refactoring and/or a complete rewrite.
+As of now, this library is almost an exact copy of an old javascript RML mapper, [RocketRML](https://github.com/semantifyit/RocketRML). RocketRML is not actively maintained aside from occasional bug fixes and could benefit from improvements to code quality and the addition of typesafety (eg. via Typescript). To that effect, we are planning lots of refactoring and/or a complete rewrite of this library.
 
 The major difference between this library and RocketRML is a change to make it browser compatible. This includes the removal of the dependency on Node.js native modules like `fs` and `path`.
 
