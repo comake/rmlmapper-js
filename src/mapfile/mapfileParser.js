@@ -112,15 +112,12 @@ const replaceConstantShortProps = (graph) => {
 const expandedJsonMap = async (ttl) => {
   const [response, prefixes] = await ttlToJson(ttl);
   const result = {};
-  result.prefixes = prefixes;
   const regex = /@base <(.*)>/;
   let base = '_:';
   if (ttl.match(regex) && ttl.match(regex)[1]) {
     base = ttl.match(regex)[1];
   }
-  if (!result.prefixes) {
-    result.prefixes = {};
-  }
+  result.prefixes = prefixes || {};
   result.prefixes.base = base;
   const prefixFreeGraph = response['@graph'].map(node => prefixHelper.checkAndRemovePrefixesFromObject(node, result.prefixes));
   replaceConstantShortProps(prefixFreeGraph);

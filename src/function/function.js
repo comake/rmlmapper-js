@@ -133,7 +133,7 @@ const executeFunction = async (definition, parameters, options) => {
 };
 
 const executeJavascriptFunction = (functionString, parameters) => {
-  console.warn('EVAL within rocketrml is deprecated, use functions instead');
+  console.warn('EVAL within rmlmapper-js is deprecated, use functions instead');
   let toEvaluate = functionString;
   switch (typeof parameters) {
     case 'string':
@@ -155,7 +155,7 @@ const executeJavascriptFunction = (functionString, parameters) => {
 
 // deprecated
 const httpCall = async (data, parameters) => {
-  console.warn('HTTP call within rocketrml is deprecated, use functions instead');
+  console.warn('HTTP call within rmlmapper-js is deprecated, use functions instead');
   // eslint-disable-next-line no-eval
   data = eval(`({${data}})`);
 

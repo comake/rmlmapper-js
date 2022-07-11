@@ -1,33 +1,26 @@
-![Screenshot](https://raw.githubusercontent.com/semantifyit/RocketRML/master/rocket-rml.jpg)
+# rmlmapper-js
 
-# RocketRML
-###### For the legacy version with the different behavior of the iterator please see [this](https://github.com/semantifyit/RML-mapper/tree/legacy) version.
-This is a javascript RML-mapper implementation for the RDF mapping language ([RML](http://rml.io/spec.html)).
+This library is a javascript RML mapper implementation for the [RDF mapping language (RML)](http://rml.io/spec.html).
 
-## Try it out
-If you want to try the mapper without installing you can also see a working demo with a graphical interface [here](https://semantifyit.github.io/rml/)
-## Install
-To install it via npm:
+As of now, this library is almost an exact copy of an old javascript RML mapper, [RocketRML](https://github.com/semantifyit/RocketRML). RocketRML is not not actively maintained aside from occasional bug fixes and suffers from poor code quality recuding its maintainability. We are planning lots of refactoring and/or a complete rewrite.
 
-    npm install rocketrml
-    
-## Quick-start
-After installation, you can to copy [index.js](https://github.com/semantifyit/RocketRML/blob/master/docs/node/index.js) into your current working directory.
-Also, the [mapfile.ttl](https://github.com/semantifyit/RocketRML/blob/master/docs/node/mapping.ttl) and the [input](https://github.com/semantifyit/RocketRML/blob/master/docs/node/input.json) is needed.
+The major difference between this library and RocketRML is a change to make it browser compatible. This includes the removal of the dependency on Node.js native modules like `fs` and `path`.
 
-Then you can execute your first example via:
+## Installation
 
-    node index.js
-    
-which starts the execution and the output is then written to ./out.n3.
+Via npm or yarn:
 
- 
- Also, an example Dockerfile can be seen [here](https://github.com/semantifyit/RocketRML/blob/master/docs/docker).
+```shell
+npm install @comake/rmlmapper-js
+```
+```shell
+yarn add @comake/rmlmapper-js
+```
 
-## What does it support
-    
+## Support
 
-### RML Vocabulary
+
+#### RML Vocabulary
 the following list contains the current supported classes.
 
 
@@ -40,7 +33,7 @@ the following list contains the current supported classes.
     rr:RefObjectMap is the class of referencing object maps.
     rml:referenceFormulation is the class of supported reference formulations.
     rr:Join is the class of join conditions.
-        
+
 Missing:
 
     rr:R2RMLView is the class of R2RML views.
@@ -49,114 +42,88 @@ Missing:
 
 
 
-### Querying languages
+#### Querying languages
 
-The mapper supports XML, JSON and CSV as input format. For querying the data, [JSONPath](https://www.npmjs.com/package/jsonpath-plus) (json), [XPath](https://www.npmjs.com/package/xpath) (xml) and [csvjson](https://www.npmjs.com/package/csvjson) (csv) are used. Since JSON is supported natively by javascript, it has a huge speed benefit compared to XML. 
+The mapper supports XML, JSON and CSV as input format. For querying the data, [JSONPath](https://www.npmjs.com/package/jsonpath-plus) (json), [XPath](https://www.npmjs.com/package/xpath) (xml) and [csvjson](https://www.npmjs.com/package/csvjson) (csv) are used. Since JSON is supported natively by javascript, it has a huge speed benefit compared to XML.
 
-Therefore, the mapper also contains a [C++ version](https://github.com/ThibaultGerrier/XpathIterator) (which uses [pugixml](https://pugixml.org/)) of the XML-parser which is disabled by default, but can be enabled via the options parameter `xpathLib: 'pugixml'`. 
+Therefore, the mapper also contains a [C++ version](https://github.com/ThibaultGerrier/XpathIterator) (which uses [pugixml](https://pugixml.org/)) of the XML-parser which is disabled by default, but can be enabled via the options parameter `xpathLib: 'pugixml'`.
 
 XPath 3.1 is available through [fontoxpath](https://www.npmjs.com/package/fontoxpath) and must be enabled through the option: `xpathLib: 'fontoxpath'`
 
-## How does it work
+### How it works
 
-The parseFile function in index.js is the entry point. 
-It takes an input path (the mapping.ttl file) and an output path (where the json output is written).
-The function returns a promise, which resolves in the resulting output, but the output is also written to the file system.
+The `parse` function is the entry point of this library.
+It takes an RML `mapping` serialized as turtle, and a collection of `inputFiles` keyed on the filename they represent in the mapping. Optionally, it accepts an `options` argument.
+
+The function returns a promise, which resolves to the resulting output.
 
 ### The options parameter
 ```javascript
 {
-    /*
-    compact jsonld document with provided context
-    { http://schema.org/name:"Tom" } 
-    -> 
-    { 
-      @context:"http://schema.org/",
-      name:"Tom"
-    }
-    */
-    compress: { 
+    // compact jsonld document with provided context
+    // { http://schema.org/name:"Tom" }
+    // ->
+    // {
+    //   @context:"http://schema.org/",
+    //   name:"Tom"
+    // }
+    compress: {
       '@vocab': "http://schema.org/"
     },
-    /*
-    If you want n-quads instead of json as output, 
-    you need to define toRDF to true in the options parameter
-    */
+    // If you want n-quads instead of json as output,
+    // you need to define toRDF to true in the options parameter
     toRDF: true,
-    /*
-    If you want to insert your all objects with their regarding @id's (to get a nesting in jsonld), "Un-flatten" jsonld
-    */
+    // If you want to insert your all objects with their regarding @id's (to get a nesting in jsonld), "Un-flatten" jsonld
     replace: true,
-    /*
-    You can delete namespaces to make the xpath simpler.
-    */
+    // You can delete namespaces to make the xpath simpler.
     removeNameSpace: {xmlns:"https://xmlnamespace.xml"},
-    /*
-    Choose xpath evaluator library, available options: default | xpath (same as default) | pugixml (cpp xpath implementation, previously xmlPerformanceMode:true) | fontoxpath (xpath 3.1 engine)
-    */
+    // Choose xpath evaluator library, available options: default | xpath (same as default) | pugixml (cpp xpath implementation, previously xmlPerformanceMode:true) | fontoxpath (xpath 3.1 engine)
     xpathLib: "default",
-    /*
-    ignore input values that are empty string (or whitespace only) (only use a value from the input if value.trim() !== '') (default false)
-    */
+    // ignore input values that are empty string (or whitespace only) (only use a value from the input if value.trim() !== '') (default false)
     ignoreEmptyStrings: true,
-    /*
-    values that are to be ignored from the input. E.g ignore all input values that are "-"
-    */
+    // values that are to be ignored from the input. E.g ignore all input values that are "-"
     ignoreValues: ["-"],
-    /*
-    You can also use functions to manipulate the data while parsing. (E.g. Change a date to a ISO format, ..)
-    */
+    // You can also use functions to manipulate the data while parsing. (E.g. Change a date to a ISO format, ..)
     functions : {**See the Functions section**}
-    /*
-    Any options to parse the csv. available: delimiter - default ","
-    */
+    // Any options to parse the csv. available: delimiter - default ","
     csv: {
       delimiter: ";"
     }
-    
 }
 ```
 
-### How to call the function
+#### Usage
 ```javascript
-const parser = require('rocketrml');
+const parser = require('@comake/rmlmapper-js');
 
-const doMapping = async () => {
-  const options = {
-    toRDF: true,
-    verbose: true,
-    xmlPerformanceMode: false,
-    replace: false,
-  };
-  const result = await parser.parseFile('./mapping.ttl', './out.n3', options).catch((err) => { console.log(err); });
-  console.log(result);
+const mapping = `
+  <#Mapping> rml:logicalSource [
+    rml:source "input.json";
+    rml:referenceFormulation ql:JSONPath;
+    rml:iterator "$".
+  ];
+`;
+
+const options = {
+  toRDF: true,
+  verbose: true,
+  xmlPerformanceMode: false,
+  replace: false,
 };
 
+const inputFiles = {
+  'input.json': '{ "name": "Adler" }'
+}
 
-doMapping();
+const result = await parser.parseFile(mapping, inputFiles, options);
 ```
-If you do not want to use the file system, you can use 
-```javascript
-  const result = await parser.parseFileLive(mapfile, inputFiles, options);
-  ```
-  Where mapfile is the mapping.ttl as string,
-  inputFiles is an object where the keys are the file names and the value is the file content as string.
-  E.g:
-  ```javascript
-  let inputFiles={
-    mydata: '{name:test}',
-    mydata2: '<root>testdata</root>'
-  };
-   ```
-   
 
 ## Example
 Below there is shown a very simple example with no nesting and no array.
 
 More can be seen in the tests folder
 
-### Input
-
+#### Input
 
 ```json
 {
@@ -166,7 +133,7 @@ More can be seen in the tests folder
 ```
 
 
-### Turtle mapfile
+#### Turtle mapfile
 
 The mapfile must also specify the input source path.
 
@@ -176,28 +143,28 @@ The mapfile must also specify the input source path.
   @prefix schema: <http://schema.org/> .
   @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
   @base <http://sti2.at/> . #the base for the classes
-  
-  
+
+
   <#LOGICALSOURCE>
-  rml:source "./tests/straightMapping/input.json";
+  rml:source "input.json";
   rml:referenceFormulation ql:JSONPath;
   rml:iterator "$".
-  
-  
+
+
   <#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
-  
+
    rr:subjectMap [
       rr:termType rr:BlankNode;
       rr:class schema:Person;
    ];
-  
-  
+
+
   rr:predicateObjectMap [
       rr:predicate schema:name;
       rr:objectMap [ rml:reference "name" ];
   ];
-  
+
   rr:predicateObjectMap [
       rr:predicate schema:age;
       rr:objectMap [ rml:reference "age" ];
@@ -205,7 +172,7 @@ The mapfile must also specify the input source path.
 
 ```
 
-### Output
+#### Output
 ```json
 [{
   "@type": "http://schema.org/Person",
@@ -215,10 +182,10 @@ The mapfile must also specify the input source path.
 ```
 
 ## Functions:
-To fit our needs, we also had to implement the functionality to programmatically evaluate data during the predicateObjectMap.  
-Therefore, we also allow the user to write use javascript functions, they defined beforehand and passes through the options parameter.
+This library also allows the user to define javascript functions beforehand and passes them through the options parameter. These functions can be used within an RML Mapping according to the [FNO specification](https://fno.io/rml/).
+
 An example how this works can be seen below:
-### Input
+#### Input
 
 
 ```json
@@ -229,7 +196,7 @@ An example how this works can be seen below:
 ```
 
 
-### Turtle mapfile
+#### Turtle mapfile
 
 The mapfile must also specify the input source path.
 
@@ -243,38 +210,32 @@ The mapfile must also specify the input source path.
   @prefix fno: <http://w3id.org/function/ontology#> .
   @prefix grel: <http://users.ugent.be/~bjdmeest/function/grel.ttl#> .
   @base <http://sti2.at/> . #the base for the classes
-  
-  
+
+
   <#LOGICALSOURCE>
-  rml:source "./tests/straightMapping/input.json";
+  rml:source "input.json";
   rml:referenceFormulation ql:JSONPath;
   rml:iterator "$".
-  
-  
+
   <#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
-  
+
    rr:subjectMap [
       rr:termType rr:BlankNode;
       rr:class schema:Person;
    ];
-  
-  
+
+
   rr:predicateObjectMap [
       rr:predicate schema:name;
       rr:objectMap [ rml:reference "name" ];
   ];
-  
-  rr:predicateObjectMap [
-      rr:predicate schema:age;
-      rr:objectMap [ rml:reference "age" ];
-  ];
-  
+
    rr:predicateObjectMap [
         rr:predicate schema:description;
         rr:objectMap  <#FunctionMap>;
     ].
-    
+
     <#FunctionMap>
          fnml:functionValue [
              rml:logicalSource <#LOGICALSOURCE> ;
@@ -299,28 +260,23 @@ where the option parameter looks like this:
   let options={
         functions: {
             'http://users.ugent.be/~bjdmeest/function/grel.ttl#createDescription': function (data) {
-                let result=data[0]+' is '+data[1]+ ' years old.'; 
+                let result=data[0]+' is '+data[1]+ ' years old.';
                 return result;
                 }
             }
         };
 ```
 
-### Output
+#### Output
 ```json
 
 [{
   "@type": "http://schema.org/Person",
   "http://schema.org/name": "Tom A.",
-  "http://schema.org/age": 15,
   "http://schema.org/description": "Tom A. is 15 years old."
 }]
 ```
 
-### Description
-The <#FunctionMap> has an array of predicateObjectMaps. One of them defines the function with fno:executes and the name of the function in rr:constant.
-The others are for the function parameters. The first parameter (rml:reference:"name") is then stored in data[0], the second in data[1] and so on.
-
-
-
-
+#### Description
+According to the [FNO specification](https://fno.io/rml/) a `FunctionMap` has an array of `predicateObjectMaps`. One of the `predicateObjectMaps` defines the function with `fno:executes` and the name of the function in `rr:constant`.
+The other `predicateObjectMaps` specify the function parameters. The first parameter (`rml:reference: "name"`) is then stored in `data[0]`, the second in `data[1]` and so on.

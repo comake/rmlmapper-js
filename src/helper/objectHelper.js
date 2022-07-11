@@ -35,7 +35,7 @@ const removeMetaOnObject = (t) => {
 };
 
 
-const convertType = (obj) => {
+const convertRdfTypeToJsonldType = (obj) => {
   Object.keys(obj).forEach((key) => {
     if ((key === 'rdf:type' || key === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')) {
       const temp = helper.addArray(obj[key]);
@@ -46,7 +46,7 @@ const convertType = (obj) => {
       delete obj[key];
       obj['@type'] = type;
     } else if (obj[key] && typeof obj[key] === 'object') {
-      convertType(obj[key]);
+      convertRdfTypeToJsonldType(obj[key]);
     }
   });
 };
@@ -54,4 +54,4 @@ const convertType = (obj) => {
 module.exports.findIdinObjArr = findIdinObjArr;
 module.exports.removeEmpty = removeEmpty;
 module.exports.removeMeta = removeMeta;
-module.exports.convertType = convertType;
+module.exports.convertRdfTypeToJsonldType = convertRdfTypeToJsonldType;
