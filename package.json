@@ -1,6 +1,6 @@
 {
   "name": "@comake/rmlmapper-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A mapper for the RDF mapping language",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
