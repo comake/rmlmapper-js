@@ -370,22 +370,6 @@ describe('Parsing', (): void => {
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
   });
 
-  it('Function mapping.', async(): Promise<void> => {
-    const options = {
-    };
-    let result = await parseFile(
-      './test/assets/functionMapping/mapping.ttl',
-      [ './test/assets/functionMapping/input.json' ],
-      './test/assets/functionMapping/out.json',
-      options,
-    ).catch((err): void => {
-      console.log(err);
-    }) as NodeObject[];
-    result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-    const testString = 'Tom A.likes the sports: Tennis and Football';
-    assert.equal(result[1].description, testString);
-  });
-
   it('Async function mapping.', async(): Promise<void> => {
     const options = {
       functions: {
@@ -409,54 +393,6 @@ describe('Parsing', (): void => {
     const testString = 'Tom A.likes the sports: Tennis and Football';
     assert.equal(result[1].description, testString);
   });
-
-  it('Function subject mapping.', async(): Promise<void> => {
-    const options = {
-    };
-    let result = await parseFile(
-      './test/assets/functionSubjectMapping/mapping.ttl',
-      [ './test/assets/functionSubjectMapping/input.json' ],
-      './test/assets/functionSubjectMapping/out.json',
-      options,
-    ).catch((err): void => {
-      console.log(err);
-    }) as NodeObject[];
-    result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-    assert.equal(result[0]['@type'], 'Animal');
-  });
-
-  // Takes forever, maybe server down?
-  // it('Function http mapping.', async(): Promise<void> => {
-  //   const options = {
-  //   };
-  //   let result = await parseFile(
-  //   './test/assets/httpMapping/mapping.ttl',
-  //   [ './test/assets/httpMapping/input.json' ],
-  //   './test/assets/httpMapping/out.json',
-  //   options,
-  // ).catch((err): void => {
-  //   console.log(err);
-  // });
-  //   result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-  //   console.log(result);
-  //   assert.equal(result[1].description, 'delectus aut autem');
-  // });
-  //
-  // it('Function http mapping post.', async(): Promise<void> => {
-  //   const options = {
-  //   };
-  //   let result = await parseFile(
-  //   './test/assets/httpMappingBody/mapping.ttl',
-  //   [ './test/assets/httpMappingBody/input.json' ],
-  //   './test/assets/httpMappingBody/out.json',
-  //   options,
-  // ).catch((err): void => {
-  //   console.log(err);
-  // });
-  //   result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-  //   console.log(result);
-  //   assert.equal(result[1].loginToken, 'QpwL5tke4Pnpja7X');
-  // });
 
   it('Predefined function mapping.', async(): Promise<void> => {
     let result = await parseFile(
@@ -658,33 +594,6 @@ describe('Parsing', (): void => {
     const likesSport = objectHelper.findIdinObjArr(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
-  });
-
-  it('Function mapping XML.', async(): Promise<void> => {
-    const options = {
-    };
-    let result = await parseFile(
-      './test/assets/functionMappingXML/mapping.ttl',
-      [ './test/assets/functionMappingXML/input.xml' ],
-      './test/assets/functionMappingXML/out.json',
-      options,
-    ) as NodeObject[];
-    const testString = 'Tom A.likes the sports: Football and Tennis';
-    result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-    assert.equal(result[1].description, testString);
-  });
-
-  it('Function subject mapping XML.', async(): Promise<void> => {
-    const options = {
-    };
-    let result = await parseFile(
-      './test/assets/functionSubjectMappingXML/mapping.ttl',
-      [ './test/assets/functionSubjectMappingXML/input.xml' ],
-      './test/assets/functionSubjectMappingXML/out.json',
-      options,
-    ) as NodeObject[];
-    result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
-    assert.equal(result[0]['@type'], 'Animal');
   });
 
   it('subject mapping XML.', async(): Promise<void> => {

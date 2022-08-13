@@ -34,7 +34,6 @@
   "license": "MIT",
   "dependencies": {
     "@xmldom/xmldom": "^0.8.2",
-    "axios": "^0.27.2",
     "csvjson": "^5.1.0",
     "fontoxpath": "^3.26.2",
     "html2plaintext": "^2.1.4",
