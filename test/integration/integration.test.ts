@@ -1,6 +1,4 @@
 /* eslint-disable
-  @typescript-eslint/no-require-imports,
-  @typescript-eslint/no-var-requires,
   @typescript-eslint/naming-convention,
   no-console,
   operator-linebreak,
@@ -11,10 +9,10 @@ import { promises as fs } from 'fs';
 import type { NodeObject } from 'jsonld';
 import { parse, cleanCache } from '../../src';
 import type { ParseOptions } from '../../src';
+import objectHelper from '../../src/helper/objectHelper';
+import prefixhelper from '../../src/helper/prefixHelper';
 import { GREL } from '../../src/helper/vocabulary';
-const objectHelper = require('../../src/helper/objectHelper');
-const prefixhelper = require('../../src/helper/prefixHelper');
-const helper = require('../../src/input-parser/helper');
+import helper from '../../src/input-parser/helper';
 
 const prefixes = {
   rr: 'http://www.w3.org/ns/r2rml#',
@@ -478,7 +476,7 @@ describe('Parsing', (): void => {
     const options = {
       functions: {
         'http://example.com/idlab/function/random'(): string {
-          return 'abc123-def456';
+          return '42';
         },
       },
     };
@@ -492,7 +490,7 @@ describe('Parsing', (): void => {
     }) as NodeObject[];
     result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
     assert.equal(Object.keys(result[0]).includes('uuid'), true);
-    assert.equal(result[0].uuid, 'abc123-def456');
+    assert.equal(result[0].uuid, '42');
   });
 
   it('Predefined option parameter function mapping.', async(): Promise<void> => {
@@ -705,7 +703,6 @@ describe('Parsing', (): void => {
       './test/assets/tripleNestedMappingXML/mapping.ttl',
       [ './test/assets/tripleNestedMappingXML/input.xml' ],
       './test/assets/tripleNestedMappingXML/out.json',
-      { xmlPerformanceMode: true },
     ) as NodeObject[];
     result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
     assert.equal(result[0].name, 'Tom A.');
@@ -1212,5 +1209,16 @@ describe('Parsing', (): void => {
 
     assert.equal(result[0]['@id'], 'http://example.com/1/Foo');
     assert.equal(result[1]['@id'], 'http://example.com/2/Bar');
+  });
+
+  it('iriReference.', async(): Promise<void> => {
+    const result = await parseFile(
+      './test/assets/iriReference/mapping.ttl',
+      [ './test/assets/iriReference/input.json' ],
+      './test/assets/iriReference/out.json',
+    ) as NodeObject[];
+    assert.deepEqual(result[0]['https://schema.org/reference'], { '@id': 'https://example.com/john' });
+    assert.deepEqual(result[0]['https://schema.org/constant'], { '@id': 'https://example.com/john' });
+    assert.deepEqual(result[0]['https://schema.org/template'], { '@id': 'https://example.com/john' });
   });
 });

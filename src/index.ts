@@ -1,18 +1,16 @@
 /* eslint-disable
-  @typescript-eslint/no-require-imports,
-  @typescript-eslint/no-var-requires,
   unicorn/prefer-object-has-own,
   @typescript-eslint/naming-convention,
   no-console
 */
 import * as jsonld from 'jsonld';
-const objectHelper = require('./helper/objectHelper');
-const prefixhelper = require('./helper/prefixHelper');
-const replaceHelper = require('./helper/replace');
-const helper = require('./input-parser/helper');
-const logicalSource = require('./input-parser/logicalSourceParser');
-const parser = require('./input-parser/parser');
-const mapfile = require('./mapfile/mapfileParser');
+import objectHelper from './helper/objectHelper';
+import prefixhelper from './helper/prefixHelper';
+import replaceHelper from './helper/replace';
+import helper from './input-parser/helper';
+import logicalSource from './input-parser/logicalSourceParser';
+import parser from './input-parser/parser';
+import mapfile from './mapfile/mapfileParser';
 
 export interface ParseOptions {
   // Jsonld @context for json-ld compress
@@ -70,11 +68,10 @@ function mergeJoin(output: Record<string, any>, res: Res, options: ProcessOption
             for (const i in predicateData) {
               if (Object.prototype.hasOwnProperty.call(predicateData, i)) {
                 const singleJoin = predicateData[i];
-                let parentId = prefixhelper.checkAndRemovePrefixesFromObject(
+                const record: Record<string, any> = prefixhelper.checkAndRemovePrefixesFromObject(
                   objectHelper.findIdinObjArr(res.data, singleJoin.mapID, res.prefixes), res.prefixes,
                 );
-                parentId = parentId.parentTriplesMap['@id'];
-
+                const parentId = record.parentTriplesMap['@id'];
                 const toMapData = helper.addArray(output[parentId]);
 
                 if (singleJoin.joinCondition) {
@@ -239,7 +236,7 @@ export async function parse(
   options: ParseOptions = {},
 ): Promise<string | jsonld.NodeObject[]> {
   cleanCache(options);
-  const res = await mapfile.expandedJsonMap(mapping) as Res;
+  const res = await mapfile.expandedJsonMap(mapping) as unknown as Res;
   const output = await process(res, { ...options, inputFiles });
   const out = await clean(output, options);
   if (options.toRDF) {
