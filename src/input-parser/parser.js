@@ -7,7 +7,6 @@ const functionHelper = require('../function/function.js');
 const XMLParser = require('./XMLParser.js');
 const JSONParser = require('./JSONParser.js');
 const CSVParser = require('./CSVParser.js');
-const XMLParserCPP = require('./XmlParserCpp');
 const FontoxpathParser = require('./FontoxpathParser');
 
 const { getDataFromParser } = helper;
@@ -19,10 +18,7 @@ const parseFile = async (data, currObject, prefixes, source, iterator, options, 
   let Parser;
   switch (ql) {
     case 'XPath':
-      if (options && ((options.xmlPerformanceMode && options.xmlPerformanceMode === true)
-      || (options.xpathLib && options.xpathLib === 'pugixml'))) {
-        Parser = new XMLParserCPP(source, iterator, options);
-      } else if (options && options.xpathLib && options.xpathLib === 'fontoxpath') {
+      if (options && options.xpathLib && options.xpathLib === 'fontoxpath') {
         Parser = new FontoxpathParser(source, iterator, options);
       } else {
         Parser = new XMLParser(source, iterator, options);
