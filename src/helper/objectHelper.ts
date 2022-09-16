@@ -20,7 +20,7 @@ function removeEmptyFromAllKeysOfNodeObject(nodeObject: NodeObject): NodeObject 
       if (obj[subNodeKey] && typeof obj[subNodeKey] === 'object') {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         obj[subNodeKey] = removeEmptyFromAllNodes(obj[subNodeKey] as NodeObject);
-      } else if (!obj[subNodeKey]) {
+      } else if (obj[subNodeKey] === null || obj[subNodeKey] === undefined) {
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete obj[subNodeKey];
       }
