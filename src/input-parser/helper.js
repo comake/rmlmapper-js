@@ -134,11 +134,9 @@ const addArray = (arr) => {
 
 const addToObj = (obj, pred, data) => {
   if (obj[pred]) {
-    if (!Array.isArray(obj[pred])) {
-      obj[pred] = [ obj[pred], data ];
-    } else {
-      obj[pred].push(data);
-    }
+    const existingValueAsArray = addArray(obj[pred]);
+    const dataAsArray = addArray(data);
+    obj[pred] = [...existingValueAsArray, ...dataAsArray ];
   } else {
     obj[pred] = data;
   }
