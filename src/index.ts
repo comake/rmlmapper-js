@@ -4,7 +4,12 @@
   no-console
 */
 import * as jsonld from 'jsonld';
-import objectHelper from './helper/objectHelper';
+import {
+  findIdinObjArr,
+  removeMetaFromAllNodes,
+  removeEmptyFromAllNodes,
+  convertRdfTypeToJsonldType,
+} from './helper/objectHelper';
 import prefixhelper from './helper/prefixHelper';
 import replaceHelper from './helper/replace';
 import helper from './input-parser/helper';
@@ -49,11 +54,15 @@ interface ProcessOptionsWithMetadata extends ProcessOptions {
 
 interface Res {
   prefixes: Record<string, string>;
-  data: jsonld.NodeObject;
+  data: jsonld.NodeObject[];
   topLevelMappings: string[];
 }
 
-function mergeJoin(output: Record<string, any>, res: Res, options: ProcessOptions): Record<string, any> {
+function mergeJoin(
+  output: Record<string, any[]>,
+  res: Res,
+  options: ProcessOptions,
+): Record<string, any> {
   helper.consoleLogIf('Perform joins..', options);
   for (const key in output) {
     if (Object.prototype.hasOwnProperty.call(output, key)) {
@@ -69,7 +78,7 @@ function mergeJoin(output: Record<string, any>, res: Res, options: ProcessOption
               if (Object.prototype.hasOwnProperty.call(predicateData, i)) {
                 const singleJoin = predicateData[i];
                 const record: Record<string, any> = prefixhelper.checkAndRemovePrefixesFromObject(
-                  objectHelper.findIdinObjArr(res.data, singleJoin.mapID, res.prefixes), res.prefixes,
+                  findIdinObjArr(res.data, singleJoin.mapID, res.prefixes), res.prefixes,
                 );
                 const parentId = record.parentTriplesMap['@id'];
                 const toMapData = helper.addArray(output[parentId]);
@@ -131,11 +140,11 @@ function mergeJoin(output: Record<string, any>, res: Res, options: ProcessOption
   return output;
 }
 
-export async function process(res: Res, options: ProcessOptions): Promise<any> {
-  let output: Record<string, any> = {};
+export async function process(res: Res, options: ProcessOptions): Promise<Record<string, jsonld.NodeObject[]>> {
+  let output: Record<string, jsonld.NodeObject[]> = {};
   const optionsWithMetadata = helper.createMeta(options) as ProcessOptionsWithMetadata;
   for (const id of res.topLevelMappings) {
-    let obj = objectHelper.findIdinObjArr(res.data, id, res.prefixes);
+    let obj = findIdinObjArr(res.data, id, res.prefixes);
     obj = prefixhelper.checkAndRemovePrefixesFromObject(obj, res.prefixes);
     const source = logicalSource.parseLogicalSource(res.data, res.prefixes, obj.logicalSource['@id']);
     switch (source.referenceFormulation) {
@@ -181,13 +190,13 @@ export async function process(res: Res, options: ProcessOptions): Promise<any> {
 }
 
 export async function clean(
-  output: jsonld.NodeObject | jsonld.NodeObject[],
+  outputByMapping: Record<string, jsonld.NodeObject[]>,
   options: any,
 ): Promise<jsonld.NodeObject[]> {
-  output = objectHelper.removeMeta(output);
-  objectHelper.removeEmpty(output);
-
-  objectHelper.convertRdfTypeToJsonldType(output);
+  let output = Object.values(outputByMapping).flat();
+  output = removeMetaFromAllNodes(output);
+  output = removeEmptyFromAllNodes(output);
+  convertRdfTypeToJsonldType(output);
 
   if (options?.replace && options.replace === true) {
     helper.consoleLogIf('Replacing BlankNodes..', options);
@@ -210,15 +219,9 @@ export async function clean(
   }
 
   if (options?.language) {
-    if (Array.isArray(output)) {
-      output.forEach((subOutput: Record<string, any>): void => {
-        subOutput['@context'] = { '@language': options.language };
-      });
-    } else {
-      output['@context'] = {
-        '@language': options.language,
-      };
-    }
+    output.forEach((subOutput: Record<string, any>): void => {
+      subOutput['@context'] = { '@language': options.language };
+    });
   }
 
   return Array.isArray(output) ? output : [ output ];

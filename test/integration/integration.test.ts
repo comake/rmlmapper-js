@@ -1,15 +1,14 @@
 /* eslint-disable
   @typescript-eslint/naming-convention,
   no-console,
-  operator-linebreak,
-  jest/no-commented-out-tests
+  operator-linebreak
 */
 import * as assert from 'assert';
 import { promises as fs } from 'fs';
 import type { NodeObject } from 'jsonld';
 import { parse, cleanCache } from '../../src';
 import type { ParseOptions } from '../../src';
-import objectHelper from '../../src/helper/objectHelper';
+import { findIdinObjArr } from '../../src/helper/objectHelper';
 import prefixhelper from '../../src/helper/prefixHelper';
 import { GREL } from '../../src/helper/vocabulary';
 import helper from '../../src/input-parser/helper';
@@ -364,8 +363,8 @@ describe('Parsing', (): void => {
     assert.equal(result[0].name, 'Tom A.');
     assert.equal(result[0].age, '15');
     assert.equal(result[0]['@type'], 'Person');
-    const sportId = (result[0].likesSports as NodeObject)['@id'];
-    const likesSport = objectHelper.findIdinObjArr(result, sportId, prefixes);
+    const sportId = (result[0].likesSports as NodeObject)['@id']!;
+    const likesSport = findIdinObjArr(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
   });
@@ -590,8 +589,8 @@ describe('Parsing', (): void => {
     assert.equal(result[0].name, 'Tom A.');
     assert.equal(result[0].age, '15');
     assert.equal(result[0]['@type'], 'Person');
-    const sportId = (result[0].likesSports as NodeObject)['@id'];
-    const likesSport = objectHelper.findIdinObjArr(result, sportId, prefixes);
+    const sportId = (result[0].likesSports as NodeObject)['@id']!;
+    const likesSport = findIdinObjArr(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
   });
@@ -1129,5 +1128,15 @@ describe('Parsing', (): void => {
     assert.deepEqual(result[0]['https://schema.org/reference'], { '@id': 'https://example.com/john' });
     assert.deepEqual(result[0]['https://schema.org/constant'], { '@id': 'https://example.com/john' });
     assert.deepEqual(result[0]['https://schema.org/template'], { '@id': 'https://example.com/john' });
+  });
+
+  it('subjectClassAndRdfType.', async(): Promise<void> => {
+    const result = await parseFile(
+      './test/assets/subjectClassAndRdfType/mapping.ttl',
+      [ './test/assets/subjectClassAndRdfType/input.json' ],
+      './test/assets/subjectClassAndRdfType/out.json',
+    ) as NodeObject[];
+    assert.equal((result[0]['@type'] as string[])[0], 'http://schema.org/Person');
+    assert.equal((result[0]['@type'] as string[])[1], 'http://type.com');
   });
 });

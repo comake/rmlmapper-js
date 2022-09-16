@@ -135,26 +135,25 @@ const addArray = (arr) => {
 const addToObj = (obj, pred, data) => {
   if (obj[pred]) {
     if (!Array.isArray(obj[pred])) {
-      const temp = obj[pred];
-      obj[pred] = [];
-      obj[pred].push(temp);
+      obj[pred] = [ obj[pred], data ];
+    } else {
+      obj[pred].push(data);
     }
-    obj[pred].push(data);
   } else {
     obj[pred] = data;
   }
 };
 
 const addToObjInId = (obj, pred, data) => {
+  const dataAsNode = { '@id': data };
   if (obj[pred]) {
     if (!Array.isArray(obj[pred])) {
-      const temp = obj[pred];
-      obj[pred] = [];
-      obj[pred].push(temp);
+      obj[pred] = [ obj[pred], dataAsNode ];
+    } else {
+      obj[pred].push(dataAsNode);
     }
-    obj[pred].push({ '@id': data });
   } else {
-    obj[pred] = { '@id': data };
+    obj[pred] = dataAsNode;
   }
 };
 
