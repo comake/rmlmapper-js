@@ -88,7 +88,7 @@ const iterateFile = async (Parser, data, currObject, prefixes, options) => {
       type = prefixhelper.replacePrefixWithURL(subjectMap.class['@id'], prefixes);
     }
   }
-  const functionClassMap = (subjectMap.class && Object.keys(subjectMap.class).length > 1) ? subjectMap.class : undefined;
+  const functionClassMap = (subjectMap.class && subjectMap.class.functionValue) ? subjectMap.class : undefined;
 
   let result = [];
   const iteratorNumber = Parser.getCount();
