@@ -112,7 +112,7 @@ export const predefinedFunctions = {
   [IDLAB.notEqual]([ argA, argB ]: string[]): boolean {
     return argA !== argB;
   },
-  [IDLAB.getMimeType](data: any): any {
+  [IDLAB.getMIMEType](data: any): any {
     return mime.lookup(data[IDLAB.str]);
   },
   [IDLAB.isNull](data: any): boolean {
