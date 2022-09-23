@@ -2,7 +2,7 @@
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
 @prefix schema: <http://schema.org/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-@base <http://sti2.at/> . #the base for the classes
+@base <http://example.test/> . #the base for the classes
 
 
 <#LOGICALSOURCE>

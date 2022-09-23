@@ -4,7 +4,7 @@
 @prefix schema: <http://schema.org/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
 @prefix prefix: <http://mytestprefix.org/> .
-@base <http://sti2.at/> . #the base for the classes
+@base <http://example.test/> . #the base for the classes
 
 
 <#LOGICALSOURCE>

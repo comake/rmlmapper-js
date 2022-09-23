@@ -14,7 +14,7 @@ import prefixhelper from './helper/prefixHelper';
 import replaceHelper from './helper/replace';
 import helper from './input-parser/helper';
 import logicalSource from './input-parser/logicalSourceParser';
-import parser from './input-parser/parser';
+import parserHelpers from './input-parser/parserHelpers';
 import mapfile from './mapfile/mapfileParser';
 
 export interface ParseOptions {
@@ -150,7 +150,7 @@ export async function process(res: Res, options: ProcessOptions): Promise<Record
     switch (source.referenceFormulation) {
       case 'XPath': {
         helper.consoleLogIf('Processing with XPath', optionsWithMetadata);
-        let resultXML = await parser.parseFile(
+        let resultXML = await parserHelpers.parseFile(
           res.data, obj, res.prefixes, source.source, source.iterator, optionsWithMetadata, 'XPath',
         );
         resultXML = resultXML.length === 1 ? resultXML[0] : resultXML;
@@ -161,7 +161,7 @@ export async function process(res: Res, options: ProcessOptions): Promise<Record
       }
       case 'JSONPath': {
         helper.consoleLogIf('Processing with JSONPath', optionsWithMetadata);
-        let resultJSON = await parser.parseFile(
+        let resultJSON = await parserHelpers.parseFile(
           res.data, obj, res.prefixes, source.source, source.iterator, optionsWithMetadata, 'JSONPath',
         );
         resultJSON = resultJSON.length === 1 ? resultJSON[0] : resultJSON;
@@ -172,7 +172,7 @@ export async function process(res: Res, options: ProcessOptions): Promise<Record
       }
       case 'CSV': {
         helper.consoleLogIf('Processing with CSV', optionsWithMetadata);
-        let resultCSV = await parser.parseFile(
+        let resultCSV = await parserHelpers.parseFile(
           res.data, obj, res.prefixes, source.source, source.iterator, optionsWithMetadata, 'CSV',
         );
         resultCSV = resultCSV.length === 1 ? resultCSV[0] : resultCSV;
