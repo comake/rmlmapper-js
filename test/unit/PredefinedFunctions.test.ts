@@ -7,10 +7,16 @@ jest.mock('uuid', (): any => ({ v4: jest.fn().mockReturnValue('abc123') }));
 describe('mapper functions', (): void => {
   describe('grel:array_join', (): void => {
     it('joins an array with a separator.', (): void => {
-      expect(predefinedFunctions[GREL.array_join]([ ',', 'a', 'b', 'c' ])).toBe('a,b,c');
+      const args = [ ',', 'a', 'b', 'c' ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args.slice(1);
+      args[GREL.p_string_sep] = args[0];
+      expect(predefinedFunctions[GREL.array_join](args)).toBe('a,b,c');
     });
     it('filters out empty arrays before joining.', (): void => {
-      expect(predefinedFunctions[GREL.array_join]([ ',', [], 'a', 'b', [], []])).toBe('a,b');
+      const args = [ ',', [], 'a', 'b', [], []] as Record<string | number, any>;
+      args[GREL.p_array_a] = args.slice(1);
+      args[GREL.p_string_sep] = args[0];
+      expect(predefinedFunctions[GREL.array_join](args)).toBe('a,b');
     });
   });
 
@@ -170,21 +176,29 @@ describe('mapper functions', (): void => {
 
   describe('grel:array_sum', (): void => {
     it('returns the sum of the arguments.', (): void => {
-      expect(predefinedFunctions[GREL.array_sum]({ [GREL.p_array_a]: [ 1, 2, 3 ]})).toBe(6);
+      const args = [ 1, 2, 3 ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args;
+      expect(predefinedFunctions[GREL.array_sum](args)).toBe(6);
     });
 
     it('returns the p_array_a arg if it is not an array.', (): void => {
-      expect(predefinedFunctions[GREL.array_sum]({ [GREL.p_array_a]: 3 })).toBe(3);
+      const args = [ 3 ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args[0];
+      expect(predefinedFunctions[GREL.array_sum](args)).toBe(3);
     });
   });
 
   describe('grel:array_product', (): void => {
     it('returns the product of the arguments.', (): void => {
-      expect(predefinedFunctions[GREL.array_product]({ [GREL.p_array_a]: [ 4, 2, 3 ]})).toBe(24);
+      const args = [ 4, 2, 3 ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args;
+      expect(predefinedFunctions[GREL.array_product](args)).toBe(24);
     });
 
     it('returns the p_array_a arg if it is not an array.', (): void => {
-      expect(predefinedFunctions[GREL.array_product]({ [GREL.p_array_a]: 3 })).toBe(3);
+      const args = [ 3 ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args[0];
+      expect(predefinedFunctions[GREL.array_product](args)).toBe(3);
     });
   });
 
@@ -322,9 +336,9 @@ describe('mapper functions', (): void => {
     });
   });
 
-  describe('idlab:getMimeType', (): void => {
+  describe('idlab:getMIMEType', (): void => {
     it('returns an mime type based on the filename string parameter.', (): void => {
-      expect(predefinedFunctions[IDLAB.getMimeType]({ [IDLAB.str]: 'final_final.jpg' })).toBe('image/jpeg');
+      expect(predefinedFunctions[IDLAB.getMIMEType]({ [IDLAB.str]: 'final_final.jpg' })).toBe('image/jpeg');
     });
   });
 

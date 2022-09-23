@@ -1,5 +1,5 @@
 import { replacePrefixWithURL } from './helper/prefixHelper';
-import { addArray, getConstant } from './input-parser/helper';
+import { addArray, addToObj, getConstant } from './input-parser/helper';
 import type { Parser } from './input-parser/Parser';
 import { predefinedFunctions } from './PredefinedFunctions';
 import { returnFirstItemInArrayOrValue } from './util/Array';
@@ -230,7 +230,7 @@ export class FunctionExecutor {
       parameters.map(async(parameter): Promise<void> => {
         // Adds parameters both by their predicates and as array values
         const value = await this.getParameterValue(parameter, index);
-        result[parameter.predicate] = value;
+        addToObj(result, parameter.predicate, value);
         result.push(value);
       }),
     );
