@@ -142,14 +142,11 @@ The mapfile must also specify the input source path.
   @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
   @prefix schema: <http://schema.org/> .
   @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-  @base <http://sti2.at/> . #the base for the classes
-
 
   <#LOGICALSOURCE>
   rml:source "input.json";
   rml:referenceFormulation ql:JSONPath;
   rml:iterator "$".
-
 
   <#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
@@ -158,7 +155,6 @@ The mapfile must also specify the input source path.
       rr:termType rr:BlankNode;
       rr:class schema:Person;
    ];
-
 
   rr:predicateObjectMap [
       rr:predicate schema:name;
@@ -209,8 +205,6 @@ The mapfile must also specify the input source path.
   @prefix fnml: <http://semweb.mmlab.be/ns/fnml#> .
   @prefix fno: <http://w3id.org/function/ontology#> .
   @prefix grel: <http://users.ugent.be/~bjdmeest/function/grel.ttl#> .
-  @base <http://sti2.at/> . #the base for the classes
-
 
   <#LOGICALSOURCE>
   rml:source "input.json";
@@ -220,38 +214,37 @@ The mapfile must also specify the input source path.
   <#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
 
-   rr:subjectMap [
-      rr:termType rr:BlankNode;
-      rr:class schema:Person;
-   ];
-
-
-  rr:predicateObjectMap [
-      rr:predicate schema:name;
-      rr:objectMap [ rml:reference "name" ];
+  rr:subjectMap [
+    rr:termType rr:BlankNode;
+    rr:class schema:Person;
   ];
 
-   rr:predicateObjectMap [
-        rr:predicate schema:description;
-        rr:objectMap  <#FunctionMap>;
-    ].
+  rr:predicateObjectMap [
+    rr:predicate schema:name;
+    rr:objectMap [ rml:reference "name" ];
+  ];
 
-    <#FunctionMap>
-         fnml:functionValue [
-             rml:logicalSource <#LOGICALSOURCE> ;
-             rr:predicateObjectMap [
-                 rr:predicate fno:executes ;
-                 rr:objectMap [ rr:constant grel:createDescription ]
-             ] ;
-             rr:predicateObjectMap [
-                 rr:predicate grel:inputString ;
-                 rr:objectMap [ rml:reference "name" ]
-             ];
-              rr:predicateObjectMap [
-                  rr:predicate grel:inputString ;
-                  rr:objectMap [ rml:reference "age" ]
-              ];
-         ] .
+  rr:predicateObjectMap [
+    rr:predicate schema:description;
+    rr:objectMap  <#FunctionMap>;
+  ].
+
+  <#FunctionMap>
+    fnml:functionValue [
+      rml:logicalSource <#LOGICALSOURCE> ;
+      rr:predicateObjectMap [
+        rr:predicate fno:executes ;
+        rr:objectMap [ rr:constant grel:createDescription ]
+      ] ;
+      rr:predicateObjectMap [
+        rr:predicate grel:inputString ;
+        rr:objectMap [ rml:reference "name" ]
+      ];
+      rr:predicateObjectMap [
+        rr:predicate grel:inputString ;
+        rr:objectMap [ rml:reference "age" ]
+      ];
+    ] .
 
 ```
 

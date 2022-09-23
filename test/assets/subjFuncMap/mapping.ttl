@@ -2,7 +2,7 @@
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
 @prefix ex: <http://example.com/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-@base <http://sti2.at/> . #the base for the classes
+@base <http://example.test/> . #the base for the classes
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix fnml: <http://semweb.mmlab.be/ns/fnml#> .
 @prefix fno: <http://w3id.org/function/ontology#> .

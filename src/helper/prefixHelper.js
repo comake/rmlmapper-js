@@ -95,9 +95,7 @@ const replacePrefixWithURL = (string, prefixes) => {
   return string;
 };
 
-module.exports = {
-  checkAndRemovePrefixesFromObject,
-  checkAndRemovePrefixesFromString,
-  replacePrefixWithURL,
-  deleteAllPrefixesFromObject,
-};
+  module.exports.checkAndRemovePrefixesFromObject = checkAndRemovePrefixesFromObject;
+  module.exports.checkAndRemovePrefixesFromString = checkAndRemovePrefixesFromString;
+  module.exports.replacePrefixWithURL = replacePrefixWithURL;
+  module.exports.deleteAllPrefixesFromObject = deleteAllPrefixesFromObject;

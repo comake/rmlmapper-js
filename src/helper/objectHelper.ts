@@ -1,9 +1,8 @@
 import type { NodeObject } from 'jsonld';
 import helper from '../input-parser/helper.js';
+import type { OrArray } from '../util/Types';
+import { RDF } from '../util/Vocabulary';
 import { replacePrefixWithURL } from './prefixHelper.js';
-import { RDF } from './vocabulary';
-
-type OrArray<T> = T | T[];
 
 export function findIdinObjArr(
   objArr: any[],

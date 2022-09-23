@@ -1,51 +1,5 @@
 const dom = require('@xmldom/xmldom').DOMParser;
-const prefixhelper = require('../helper/prefixHelper.js');
-const functionHelper = require('../function/function.js');
-
-const subjFunctionExecution = async (Parser, functionMap, prefixes, data, index, options) => {
-  const functionValue = functionMap.functionValue;
-  const definition = functionHelper.findDefinition(data, functionValue.predicateObjectMap, prefixes);
-  const parameters = functionHelper.findParameters(data, functionValue.predicateObjectMap, prefixes);
-  const params = await calculateParams(Parser, parameters, index, options);
-
-  return functionHelper.executeFunction(definition, params, options);
-};
-
-const calculateParams = async (Parser, parameters, index, options, data, prefixes) => {
-  const result = [];
-  await Promise.all(
-    parameters.map(async (p) => {
-      let temp = [];
-      if (p.type === 'constant') {
-        temp.push(p.data);
-      } else if (p.type === 'reference') {
-        temp = getDataFromParser(Parser, index, p.data, options);
-      } else if (p.type === 'template') {
-        let resolveTemplate = p.data
-        var templateRegex = /(?:\{(.*?)\})/g;
-        while (match = templateRegex.exec(p.data)) {
-            // Retrieve all matches of the regex group {myvar}
-            const variableValue = getDataFromParser(Parser, index, match[1], options);
-            resolveTemplate = resolveTemplate.replace("{" + match[1] + "}", variableValue.toString())
-        }
-        temp.push(resolveTemplate);
-      } else if (p.type === 'functionValue') {
-        const definition = functionHelper.findDefinition(data, p.data.predicateObjectMap, prefixes);
-        const functionParameters = functionHelper.findParameters(data, p.data.predicateObjectMap, prefixes);
-        const calcParameters = await calculateParams(Parser, functionParameters, index, options);
-        const res = await functionHelper.executeFunction(definition, calcParameters, options);
-        temp.push(res);
-      }
-
-      if (temp && temp.length === 1) {
-        temp = temp[0];
-      }
-      result[p.predicate] = temp;
-      result.push(temp)
-    }),
-  );
-  return result;
-};
+const prefixHelper = require('../helper/prefixHelper.js');
 
 const cleanString = (path) => {
   if (path.startsWith('.') || path.startsWith('/')) {
@@ -113,7 +67,7 @@ const locations = (substring, string) => {
 
 const getConstant = (constant, prefixes) => {
   if (constant['@id']) {
-    return prefixhelper.replacePrefixWithURL(constant['@id'], prefixes);
+    return prefixHelper.replacePrefixWithURL(constant['@id'], prefixes);
   }
   return constant;
 };
@@ -277,10 +231,10 @@ const getPredicate = (mapping, prefixes) => {
     if (Array.isArray(mapping.predicate)) {
       predicate = [];
       mapping.predicate.forEach((pre) => {
-        predicate.push(prefixhelper.replacePrefixWithURL(pre['@id'], prefixes));
+        predicate.push(prefixHelper.replacePrefixWithURL(pre['@id'], prefixes));
       });
     } else {
-      predicate = prefixhelper.replacePrefixWithURL(mapping.predicate['@id'], prefixes);
+      predicate = prefixHelper.replacePrefixWithURL(mapping.predicate['@id'], prefixes);
     }
   } else if (mapping.predicateMap) {
     // in predicateMap only constant allowed
@@ -302,25 +256,12 @@ const getPredicate = (mapping, prefixes) => {
 
 const intersection = (arrOfArr) => arrOfArr.reduce((a, b) => a.filter((c) => b.includes(c)));
 
-const getDataFromParser = (Parser, index, query, options) => {
-  let values = Parser.getData(index, query);
-  if (options.ignoreEmptyStrings === true) {
-    values = values.filter((v) => v.trim() !== '');
-  }
-  if (options.ignoreValues) {
-    values = values.filter((v) => !options.ignoreValues.includes(v));
-  }
-  return values;
-};
-
 module.exports.consoleLogIf = consoleLogIf;
 module.exports.escapeChar = escapeChar;
 module.exports.createMeta = createMeta;
 module.exports.allPossibleCases = allPossibleCases;
 module.exports.toURIComponent = toURIComponent;
 module.exports.replaceEscapedChar = replaceEscapedChar;
-module.exports.subjFunctionExecution = subjFunctionExecution;
-module.exports.calculateParams = calculateParams;
 module.exports.cleanString = cleanString;
 module.exports.locations = locations;
 module.exports.cutArray = cutArray;
@@ -335,7 +276,5 @@ module.exports.isURL = isURL;
 module.exports.addBase = addBase;
 module.exports.getConstant = getConstant;
 module.exports.setObjPredicate = setObjPredicate;
-// module.exports.getDatatypeFromPath = getDatatypeFromPath;
 module.exports.getPredicate = getPredicate;
 module.exports.intersection = intersection;
-module.exports.getDataFromParser = getDataFromParser;

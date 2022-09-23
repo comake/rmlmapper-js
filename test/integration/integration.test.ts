@@ -10,8 +10,8 @@ import { parse, cleanCache } from '../../src';
 import type { ParseOptions } from '../../src';
 import { findIdinObjArr } from '../../src/helper/objectHelper';
 import prefixhelper from '../../src/helper/prefixHelper';
-import { GREL } from '../../src/helper/vocabulary';
 import helper from '../../src/input-parser/helper';
+import { GREL } from '../../src/util/Vocabulary';
 
 const prefixes = {
   rr: 'http://www.w3.org/ns/r2rml#',
@@ -26,7 +26,6 @@ const prefixes = {
   fno: 'http://w3id.org/function/ontology#',
   grel: 'http://users.ugent.be/~bjdmeest/function/grel.ttl#',
   prefix: 'http://mytestprefix.org/',
-  sti: 'http://sti2.at#',
 };
 
 async function parseFile(
@@ -126,7 +125,7 @@ describe('Parsing', (): void => {
           + '@prefix rml: <http://semweb.mmlab.be/ns/rml#> .\n'
           + '@prefix prefix: <http://mytestprefix.org/> .\n'
           + '@prefix ql: <http://semweb.mmlab.be/ns/ql#> .\n'
-          + '@base <http://sti2.at/> . #the base for the classes\n'
+          + '@base <http://example.test/> . #the base for the classes\n'
           + '\n'
           + '\n'
           + '<#LOGICALSOURCE>\n'
@@ -268,7 +267,7 @@ describe('Parsing', (): void => {
     assert.equal(result[6].name, 'Football');
 
     assert.equal((result[5].requires as NodeObject).length, 2);
-    assert.equal((result[6].requires as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_3');
+    assert.equal((result[6].requires as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_3');
   });
 
   it('Nested mapping.', async(): Promise<void> => {
@@ -282,7 +281,7 @@ describe('Parsing', (): void => {
     ).catch((err): void => {
       console.log(err);
     }) as NodeObject[];
-    assert.equal((result[0]['http://mytestprefix.org/likesSports'] as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
+    assert.equal((result[0]['http://mytestprefix.org/likesSports'] as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
     assert.equal((result[1]['http://mytestprefix.org/name'] as string[])[1], 'Football');
   });
 
@@ -338,9 +337,9 @@ describe('Parsing', (): void => {
     }) as NodeObject[];
     result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
     assert.equal(result[0].name, 'Ben A.');
-    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
+    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
     assert.equal(result[1].name, 'Tom B.');
-    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_2');
+    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_2');
     assert.equal(Object.keys(result).length, 4);
   });
 
@@ -366,7 +365,7 @@ describe('Parsing', (): void => {
     const sportId = (result[0].likesSports as NodeObject)['@id']!;
     const likesSport = findIdinObjArr(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
-    assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
+    assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_1');
   });
 
   it('Async function mapping.', async(): Promise<void> => {
@@ -485,7 +484,7 @@ describe('Parsing', (): void => {
     assert.equal(Object.keys(result[1].likesSports as NodeObject).length, 1);
 
     assert.equal((result[5].requires as NodeObject).length, 2);
-    assert.equal((result[6].requires as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_3');
+    assert.equal((result[6].requires as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_3');
   });
 
   // TESTS FOR XML
@@ -521,7 +520,7 @@ describe('Parsing', (): void => {
       './test/assets/nestedMappingXML/out.json',
       options,
     ) as NodeObject[];
-    assert.equal((result[0]['http://mytestprefix.org/likesSports'] as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
+    assert.equal((result[0]['http://mytestprefix.org/likesSports'] as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
   });
 
   it('Test with deleting prefixes XML.', async(): Promise<void> => {
@@ -570,9 +569,9 @@ describe('Parsing', (): void => {
     ) as NodeObject[];
     result = prefixhelper.deleteAllPrefixesFromObject(result, prefixes);
     assert.equal(result[0].name, 'Ben A.');
-    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
+    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
     assert.equal(result[1].name, 'Tom B.');
-    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_2');
+    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_2');
     assert.equal(Object.keys(result).length, 4);
   });
 
@@ -592,7 +591,7 @@ describe('Parsing', (): void => {
     const sportId = (result[0].likesSports as NodeObject)['@id']!;
     const likesSport = findIdinObjArr(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
-    assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fsti2.at%2F%23REQmapping_1');
+    assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_1');
   });
 
   it('subject mapping XML.', async(): Promise<void> => {
@@ -616,8 +615,8 @@ describe('Parsing', (): void => {
     assert.equal(result[0].name, 'Tom A.');
     assert.equal(result[1].name, 'Tom B.');
 
-    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
-    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_2');
+    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
+    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_2');
 
     assert.equal((result[5].requires as NodeObject).length, 2);
   });
@@ -631,7 +630,7 @@ describe('Parsing', (): void => {
           + '@prefix rml: <http://semweb.mmlab.be/ns/rml#> .\n'
           + '@prefix prefix: <http://mytestprefix.org/> .\n'
           + '@prefix ql: <http://semweb.mmlab.be/ns/ql#> .\n'
-          + '@base <http://sti2.at/> . #the base for the classes\n'
+          + '@base <http://example.test/> . #the base for the classes\n'
           + '\n'
           + '\n'
           + '<#LOGICALSOURCE>\n'
@@ -768,8 +767,8 @@ describe('Parsing', (): void => {
     assert.equal(result[0].name, 'Tom A.');
     assert.equal(result[1].name, 'Tom B.');
 
-    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_1');
-    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fsti2.at%2F%23SPORTSmapping_2');
+    assert.equal((result[0].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1');
+    assert.equal((result[1].likesSports as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_2');
 
     assert.equal((result[5].requires as NodeObject).length, 2);
   });
@@ -881,11 +880,11 @@ describe('Parsing', (): void => {
       'http://mytestprefix.org/name': 'Hotel A',
       'http://mytestprefix.org/path': '/0/name',
       'http://mytestprefix.org/path2': '/0',
-      '@id': '_:http%3A%2F%2Fsti2.at%2F%23Mapping_1',
+      '@id': '_:http%3A%2F%2Fexample.test%2F%23Mapping_1',
       'http://mytestprefix.org/geo': {
         '@type': 'http://mytestprefix.org/GeoCoordinates',
         'http://mytestprefix.org/elevation': '1500m',
-        '@id': '_:http%3A%2F%2Fsti2.at%2F%23Elevation_1',
+        '@id': '_:http%3A%2F%2Fexample.test%2F%23Elevation_1',
       },
     });
   });
@@ -900,11 +899,11 @@ describe('Parsing', (): void => {
     assert.deepEqual(result[0], {
       '@type': 'http://mytestprefix.org/Hotel',
       'http://mytestprefix.org/name': 'Hotel A',
-      '@id': '_:http%3A%2F%2Fsti2.at%2F%23Mapping_1',
+      '@id': '_:http%3A%2F%2Fexample.test%2F%23Mapping_1',
       'http://mytestprefix.org/geo': {
         '@type': 'http://mytestprefix.org/GeoCoordinates',
         'http://mytestprefix.org/elevation': '1500m',
-        '@id': '_:http%3A%2F%2Fsti2.at%2F%23Elevation_1',
+        '@id': '_:http%3A%2F%2Fexample.test%2F%23Elevation_1',
       },
     });
   });
@@ -921,11 +920,11 @@ describe('Parsing', (): void => {
       'http://mytestprefix.org/name': 'Hotel A',
       'http://mytestprefix.org/path': '0',
       'http://mytestprefix.org/path2': '0',
-      '@id': '_:http%3A%2F%2Fsti2.at%2F%23Mapping_1',
+      '@id': '_:http%3A%2F%2Fexample.test%2F%23Mapping_1',
       'http://mytestprefix.org/geo': {
         '@type': 'http://mytestprefix.org/GeoCoordinates',
         'http://mytestprefix.org/elevation': '1500m',
-        '@id': '_:http%3A%2F%2Fsti2.at%2F%23Elevation_1',
+        '@id': '_:http%3A%2F%2Fexample.test%2F%23Elevation_1',
       },
     });
   });
@@ -941,12 +940,12 @@ describe('Parsing', (): void => {
       {
         '@type': 'http://mytestprefix.org/Person',
         'http://mytestprefix.org/name': 'Tom A.',
-        '@id': '_:http%3A%2F%2Fsti2.at%2F%23Mapping_1',
+        '@id': '_:http%3A%2F%2Fexample.test%2F%23Mapping_1',
       },
       {
         '@type': 'http://mytestprefix.org/Person',
         'http://mytestprefix.org/name': 'Tom B.',
-        '@id': '_:http%3A%2F%2Fsti2.at%2F%23Mapping_2',
+        '@id': '_:http%3A%2F%2Fexample.test%2F%23Mapping_2',
       },
     ]);
   });

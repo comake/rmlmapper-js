@@ -2,32 +2,30 @@
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
 @prefix schema: <http://schema.org/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-@base <http://sti2.at/> . #the base for the classes
+@base <http://example.test/> . #the base for the classes
 
 <#LOGICALSOURCE>
 rml:source "./test/assets/arrayValueMapping/input.json";
 rml:referenceFormulation ql:JSONPath;
 rml:iterator "$".
 
-
 <#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
 
-   rr:subjectMap [
-      rr:termType rr:BlankNode;
-      rr:class schema:Person;
-   ];
-
-
-  rr:predicateObjectMap [
-      rr:predicateMap [ rr:constant "http://schema.org/name" ];
-      rr:objectMap [ rml:reference "name" ];
+  rr:subjectMap [
+    rr:termType rr:BlankNode;
+    rr:class schema:Person;
   ];
 
   rr:predicateObjectMap [
-      rr:predicateMap [ rr:constant "http://example.com/favorite-numbers" ];
-      rr:objectMap [
-        rml:reference "favorite-numbers" ;
-        rr:datatype "http://www.w3.org/2001/XMLSchema#integer" ;
-      ];
+    rr:predicateMap [ rr:constant "http://schema.org/name" ];
+    rr:objectMap [ rml:reference "name" ];
+  ];
+
+  rr:predicateObjectMap [
+    rr:predicateMap [ rr:constant "http://example.com/favorite-numbers" ];
+    rr:objectMap [
+      rml:reference "favorite-numbers" ;
+      rr:datatype "http://www.w3.org/2001/XMLSchema#integer" ;
+    ];
   ] .
