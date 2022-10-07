@@ -1,6 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import type { SourceParser } from './SourceParser';
 
 type JsonValue =
   | string
@@ -8,14 +7,14 @@ type JsonValue =
   | boolean
   | JsonValue[];
 
-export class JsonParser implements Parser {
+export class JsonParser implements SourceParser {
   private readonly iterator: string;
   private readonly json: JSON;
   private readonly paths: string[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
+  public constructor(source: JSON, iterator: string) {
     this.iterator = iterator;
-    this.json = helper.readFileJSON(inputPath, options);
+    this.json = source;
     this.paths = JSONPath({ path: iterator, json: this.json, resultType: 'path' });
   }
 

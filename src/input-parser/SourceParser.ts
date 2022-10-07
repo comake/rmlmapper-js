@@ -1,4 +1,4 @@
-export abstract class Parser {
+export abstract class SourceParser {
   /**
   * Get the total count of items in the dataset
   */

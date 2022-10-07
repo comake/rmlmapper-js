@@ -115,7 +115,7 @@ const inputFiles = {
   'input.json': '{ "name": "Adler" }'
 }
 
-const result = await parser.parseFile(mapping, inputFiles, options);
+const result = await parser.parse(mapping, inputFiles, options);
 ```
 
 ## Example

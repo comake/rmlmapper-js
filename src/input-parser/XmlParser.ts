@@ -1,6 +1,5 @@
 import xpath from 'xpath';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import type { SourceParser } from './SourceParser';
 
 // Adapted from https://stackoverflow.com/a/30227178
 function getPathToElem(element: xpath.SelectedValue): string {
@@ -26,12 +25,11 @@ function getPathToElem(element: xpath.SelectedValue): string {
   return '';
 }
 
-export class XmlParser implements Parser {
+export class XmlParser implements SourceParser {
   private readonly docArray: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    const doc = helper.readFileXML(inputPath, options);
-    this.docArray = xpath.select(iterator, doc);
+  public constructor(source: Document, iterator: string) {
+    this.docArray = xpath.select(iterator, source);
   }
 
   public getCount(): number {

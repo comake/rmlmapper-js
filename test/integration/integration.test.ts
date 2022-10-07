@@ -6,11 +6,11 @@
 import * as assert from 'assert';
 import { promises as fs } from 'fs';
 import type { NodeObject } from 'jsonld';
-import { parse, cleanCache } from '../../src';
+import { parse } from '../../src';
 import type { ParseOptions } from '../../src';
-import { findIdinObjArr } from '../../src/helper/objectHelper';
 import prefixhelper from '../../src/helper/prefixHelper';
 import helper from '../../src/input-parser/helper';
+import { findObjectWithIdInArray } from '../../src/util/ObjectUtil';
 import { GREL } from '../../src/util/Vocabulary';
 
 const prefixes = {
@@ -34,7 +34,6 @@ async function parseFile(
   pathOutput: string,
   options: ParseOptions = {},
 ): Promise<string | NodeObject | NodeObject[]> {
-  cleanCache(options);
   const mapFile = await fs.readFile(pathInput, 'utf8');
   const inputFiles = await inputFileNames.reduce(async(
     previousPromise: Promise<Record<string, string>>,
@@ -54,11 +53,9 @@ async function parseFile(
   }, Promise.resolve({} as Record<string, string>));
   const out = await parse(mapFile, inputFiles, options);
   if (options.toRDF) {
-    helper.consoleLogIf(`Writing to ${pathOutput}`, options);
     await fs.writeFile(pathOutput, out as string);
     return out as string;
   }
-  helper.consoleLogIf(`Writing to ${pathOutput}`, options);
   await fs.writeFile(pathOutput, JSON.stringify(out, null, 2));
   return out;
 }
@@ -363,7 +360,7 @@ describe('Parsing', (): void => {
     assert.equal(result[0].age, '15');
     assert.equal(result[0]['@type'], 'Person');
     const sportId = (result[0].likesSports as NodeObject)['@id']!;
-    const likesSport = findIdinObjArr(result, sportId, prefixes);
+    const likesSport = findObjectWithIdInArray(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_1');
   });
@@ -589,7 +586,7 @@ describe('Parsing', (): void => {
     assert.equal(result[0].age, '15');
     assert.equal(result[0]['@type'], 'Person');
     const sportId = (result[0].likesSports as NodeObject)['@id']!;
-    const likesSport = findIdinObjArr(result, sportId, prefixes);
+    const likesSport = findObjectWithIdInArray(result, sportId, prefixes);
     assert.equal(likesSport.name, 'Basketball');
     assert.equal(likesSport.requires['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_1');
   });
@@ -1137,5 +1134,27 @@ describe('Parsing', (): void => {
     ) as NodeObject[];
     assert.equal((result[0]['@type'] as string[])[0], 'http://schema.org/Person');
     assert.equal((result[0]['@type'] as string[])[1], 'http://type.com');
+  });
+
+  it('nestedMappingInFunctionParameter.', async(): Promise<void> => {
+    const options = {
+      functions: {
+        'http://example.com/sum_array_of_number_objects'(data: any): string {
+          console.log(data);
+          return data['http://example.com/input']
+            .map((input: Record<string, NodeObject>): number =>
+              Number.parseInt(input['http://example.com/number']['@value'] as string, 10))
+            .reduce((sum: number, val: number): number => sum + val, 0);
+        },
+      },
+    };
+    const result = await parseFile(
+      './test/assets/nestedMappingInFunctionParameter/mapping.ttl',
+      [ './test/assets/nestedMappingInFunctionParameter/input.json' ],
+      './test/assets/nestedMappingInFunctionParameter/out.json',
+      options,
+    ) as NodeObject[];
+    console.log(result);
+    assert.equal(result[0]['http://example.com/value'], 6);
   });
 });

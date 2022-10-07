@@ -1,8 +1,6 @@
 import { registerCustomXPathFunction, evaluateXPathToNodes, evaluateXPath, evaluateXPathToStrings } from 'fontoxpath';
-import type { Document } from 'slimdom';
 import { DOMParser } from 'slimdom';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import type { SourceParser } from './SourceParser';
 
 function parseXml(xml: string): any {
   return new DOMParser().parseFromString(xml, 'text/xml');
@@ -15,14 +13,13 @@ registerCustomXPathFunction(
   (context, xml): Document => parseXml(xml),
 );
 
-export class FontoxpathParser implements Parser {
+export class FontoxpathParser implements SourceParser {
   private readonly docArray: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    const doc = helper.readFileString(inputPath, options);
+  public constructor(source: Document, iterator: string) {
     this.docArray = evaluateXPathToNodes(
       iterator,
-      parseXml(doc),
+      source,
       null,
       null,
       { language: evaluateXPath.XPATH_3_1_LANGUAGE },

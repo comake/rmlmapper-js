@@ -1,20 +1,16 @@
 import csv from 'csvjson';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import { addArray } from '../util/ArrayUtil';
+import type { SourceParser } from './SourceParser';
 
-export class CsvParser implements Parser {
-  private readonly iterator: string;
+export class CsvParser implements SourceParser {
   private readonly data: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    this.iterator = iterator;
-    const csvString = helper.readFileCSV(inputPath, options) as string;
-
+  public constructor(source: string, options: Record<string, any>) {
     const csvOptions = {
       delimiter: options.csv?.delimiter ?? ',',
     };
 
-    const result = csv.toObject(csvString, csvOptions);
+    const result = csv.toObject(source, csvOptions);
     this.data = result;
   }
 
@@ -27,7 +23,7 @@ export class CsvParser implements Parser {
       return [ index.toString() ];
     }
     if (this.data[index]?.[selector]) {
-      return helper.addArray(this.data[index][selector]);
+      return addArray(this.data[index][selector]);
     }
     return [];
   }

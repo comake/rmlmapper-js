@@ -1,0 +1,27 @@
+[
+  {
+    "http://example.com/value": 6,
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23Mapping_1"
+  },
+  {
+    "http://example.com/number": {
+      "@value": "3",
+      "@type": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23ParentMapping_1"
+  },
+  {
+    "http://example.com/number": {
+      "@value": "2",
+      "@type": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23ParentMapping_2"
+  },
+  {
+    "http://example.com/number": {
+      "@value": "1",
+      "@type": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23ParentMapping_3"
+  }
+]

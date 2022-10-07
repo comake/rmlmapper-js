@@ -1,45 +1,27 @@
 import { replacePrefixWithURL } from './helper/prefixHelper';
-import { addArray, addToObj, getConstant } from './input-parser/helper';
-import type { Parser } from './input-parser/Parser';
+import { addToObj, getConstant } from './input-parser/helper';
+import type { SourceParser } from './input-parser/SourceParser';
+import type { MappingProcessor } from './MappingProcessor';
 import { predefinedFunctions } from './PredefinedFunctions';
-import { returnFirstItemInArrayOrValue } from './util/Array';
-import type { OrArray } from './util/Types';
+import { returnFirstItemInArrayOrValue, addArray } from './util/ArrayUtil';
+import type {
+  ObjectMap,
+  OrArray,
+  PredicateMap,
+  PredicateObjectMap,
+  Prefixes,
+  ReferenceNodeObject,
+  TriplesMap,
+} from './util/Types';
 import { FNO, FNO_HTTPS } from './util/Vocabulary';
 
 type FnoFunction = (parameters: any) => Promise<any> | any;
-
-interface ReferenceNodeObject {
-  ['@id']: string;
-}
-
-interface TermMap {
-  constant?: ReferenceNodeObject | string;
-  reference?: string;
-  template?: string;
-  termType?: string;
-  datatype?: string;
-}
-
-interface ObjectMap extends TermMap {
-  functionValue?: FunctionValue;
-}
-
-interface PredicateMap extends TermMap {}
-
-interface PredicateObjectMap {
-  object?: OrArray<ReferenceNodeObject>;
-  objectMap?: OrArray<ObjectMap>;
-  predicate?: OrArray<ReferenceNodeObject>;
-  predicateMap?: OrArray<PredicateMap>;
-}
 
 interface FunctionValue {
   predicateObjectMap: OrArray<PredicateObjectMap>;
 }
 
 type FnoFunctionParameter = ObjectMap & { predicate: string };
-
-type Prefixes = Record<string, string>;
 
 const templateRegex = /(?:\{(.*?)\})/ug;
 
@@ -50,13 +32,13 @@ interface FunctionExecutorOptions {
 }
 
 interface FunctionExecutorArgs {
-  parser: Parser;
+  parser: SourceParser;
   prefixes: Prefixes;
   options?: FunctionExecutorOptions;
 }
 
 export class FunctionExecutor {
-  private readonly parser: Parser;
+  private readonly parser: SourceParser;
   private readonly prefixes: Prefixes;
   private readonly functions?: Record<string, FnoFunction>;
   private readonly ignoreEmptyStrings?: boolean;
@@ -84,10 +66,11 @@ export class FunctionExecutor {
   public async executeFunctionFromValue(
     functionValue: FunctionValue,
     index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
     const functionName = this.getFunctionName(functionValue.predicateObjectMap);
     const parameters = this.getFunctionParameters(functionValue.predicateObjectMap);
-    const params = await this.calculateFunctionParams(parameters, index);
+    const params = await this.calculateFunctionParams(parameters, index, topLevelMappingProcessors);
     return await this.executeFunction(functionName, params);
   }
 
@@ -224,12 +207,13 @@ export class FunctionExecutor {
   private async calculateFunctionParams(
     parameters: FnoFunctionParameter[],
     index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<Record<string | number, any>> {
     const result: Record<string | number, any> = [];
     await Promise.all(
       parameters.map(async(parameter): Promise<void> => {
         // Adds parameters both by their predicates and as array values
-        const value = await this.getParameterValue(parameter, index);
+        const value = await this.getParameterValue(parameter, index, topLevelMappingProcessors);
         addToObj(result, parameter.predicate, value);
         result.push(value);
       }),
@@ -237,7 +221,11 @@ export class FunctionExecutor {
     return result;
   }
 
-  private async getParameterValue(parameter: FnoFunctionParameter, index: number): Promise<any> {
+  private async getParameterValue(
+    parameter: FnoFunctionParameter,
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<any> {
     if (parameter.constant) {
       return getConstant(parameter.constant, this.prefixes);
     }
@@ -248,7 +236,10 @@ export class FunctionExecutor {
       return this.resolveTemplate(parameter.template, index);
     }
     if (parameter.functionValue) {
-      return await this.resolveFunctionValue(parameter.functionValue, index);
+      return await this.resolveFunctionValue(parameter.functionValue, index, topLevelMappingProcessors);
+    }
+    if (parameter.parentTriplesMap) {
+      return await this.resolveTriplesMap(parameter.parentTriplesMap, topLevelMappingProcessors);
     }
   }
 
@@ -268,9 +259,27 @@ export class FunctionExecutor {
     return resolvedTemplate;
   }
 
-  private async resolveFunctionValue(functionValue: FunctionValue, index: number): Promise<any> {
-    const returnValue = await this.executeFunctionFromValue(functionValue, index);
+  private async resolveFunctionValue(
+    functionValue: FunctionValue,
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<any> {
+    const returnValue = await this.executeFunctionFromValue(functionValue, index, topLevelMappingProcessors);
     return returnFirstItemInArrayOrValue(returnValue);
+  }
+
+  private async resolveTriplesMap(
+    triplesMap: TriplesMap,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<any> {
+    const processor = topLevelMappingProcessors[triplesMap['@id']];
+    if (processor) {
+      if (processor.hasProcessed()) {
+        return processor.getReturnValue();
+      }
+      return await processor.processMapping(topLevelMappingProcessors);
+    }
+    throw new Error('Could not resolve value of parentTriplesMap in function parameter');
   }
 
   private async executeFunction(

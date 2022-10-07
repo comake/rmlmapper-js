@@ -8,7 +8,7 @@ const parser = require('../../src/index.js');
 const createOutputs = () => {
   fs.readdirSync(testFolder).forEach(async (file) => {
     const options = { toRDF: true };
-    const result = await parser.parseFile(`./test/assets/RMLio-testCases/${file}/mapping.ttl`, `./test/assets/RMLio-testCases/${file}/out.nq`, options).catch((err) => {
+    const result = await parser.parse(`./test/assets/RMLio-testCases/${file}/mapping.ttl`, `./test/assets/RMLio-testCases/${file}/out.nq`, options).catch((err) => {
       console.log(err);
     });
     // console.log(result);
@@ -58,7 +58,7 @@ const printDiff = () => {
 
 
 const testSingle = async (dir, options) => {
-  const result = await parser.parseFile(`./test/assets/RMLio-testCases/${dir}/mapping.ttl`, `./test/assets/RMLio-testCases/${dir}/out.json`, options).catch((err) => {
+  const result = await parser.parse(`./test/assets/RMLio-testCases/${dir}/mapping.ttl`, `./test/assets/RMLio-testCases/${dir}/out.json`, options).catch((err) => {
     console.log(err);
   });
   console.log(result);

@@ -1,3 +1,4 @@
+const { addArray } = require('../util/ArrayUtil');
 const dom = require('@xmldom/xmldom').DOMParser;
 const prefixHelper = require('../helper/prefixHelper.js');
 
@@ -79,13 +80,6 @@ const cutArray = (arr) => {
   return arr;
 };
 
-const addArray = (arr) => {
-  if (!Array.isArray(arr)) {
-    arr = [arr];
-  }
-  return arr;
-};
-
 const addToObj = (obj, pred, data) => {
   if (obj[pred]) {
     const existingValueAsArray = addArray(obj[pred]);
@@ -126,15 +120,12 @@ const readFileXMLSimple = (source, options) => {
   let xmlStr = readFileStringSimple(source, options);
   if (options && options.removeNameSpace) {
     // remove namespace from data
-    consoleLogIf('Removing namespace..', options);
     for (const key in options.removeNameSpace) {
       const toDelete = `${key}="${options.removeNameSpace[key]}"`;
       xmlStr = xmlStr.replace(toDelete, '');
     }
   }
-  consoleLogIf('Creating DOM...', options);
   const doc = new dom().parseFromString(xmlStr);
-  consoleLogIf('DOM created!', options);
   return doc;
 };
 
@@ -143,7 +134,6 @@ const withCache = (fn, source, options) => {
     options.cache = {};
   }
   if (options.cache[source]) {
-    consoleLogIf(`Reading from cache.. : ${source}`, options);
     return options.cache[source];
   }
   const result = fn(source, options);
@@ -205,25 +195,6 @@ const toURIComponent = (str) => {
   str = str.replace(/\)/g, '%29');
   return str;
 };
-const createMeta = (obj) => {
-  if (!obj) {
-    obj = {};
-  }
-  if (!obj.$metadata) {
-    obj.$metadata = {};
-  }
-  if (!obj.$metadata.inputFiles) {
-    obj.$metadata.inputFiles = {};
-  }
-  return obj;
-};
-
-const consoleLogIf = (string, options) => {
-  if (options && options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(string);
-  }
-};
 
 const getPredicate = (mapping, prefixes) => {
   let predicate;
@@ -256,16 +227,13 @@ const getPredicate = (mapping, prefixes) => {
 
 const intersection = (arrOfArr) => arrOfArr.reduce((a, b) => a.filter((c) => b.includes(c)));
 
-module.exports.consoleLogIf = consoleLogIf;
 module.exports.escapeChar = escapeChar;
-module.exports.createMeta = createMeta;
 module.exports.allPossibleCases = allPossibleCases;
 module.exports.toURIComponent = toURIComponent;
 module.exports.replaceEscapedChar = replaceEscapedChar;
 module.exports.cleanString = cleanString;
 module.exports.locations = locations;
 module.exports.cutArray = cutArray;
-module.exports.addArray = addArray;
 module.exports.addToObj = addToObj;
 module.exports.addToObjInId = addToObjInId;
 module.exports.readFileJSON = readFileJSON;

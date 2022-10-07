@@ -3,6 +3,7 @@ const jsonld = require('jsonld');
 const helper = require('../input-parser/helper.js');
 const prefixHelper = require('../helper/prefixHelper.js');
 const { jsonLDGraphToObj } = require('../helper/replace.js');
+const { addArray } = require('../util/ArrayUtil');
 
 const quadsToJsonLD = async (nquads) => {
   let doc = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
@@ -46,7 +47,7 @@ function hasSubjectMap(e) {
 
 function isFunction(e) {
   if (e.predicateObjectMap) {
-    const predicateObjectMap = helper.addArray(e.predicateObjectMap);
+    const predicateObjectMap = addArray(e.predicateObjectMap);
     for (const obj of predicateObjectMap) {
       if (obj.predicate && obj.predicate['@id'] && obj.predicate['@id'].indexOf('executes') !== -1) {
         return true;
