@@ -1,5 +1,14 @@
 export type OrArray<T> = T | T[];
 
+export type JSONObject = Record<string, JSONValue>;
+
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | {[x: string]: JSONValue }
+  | JSONValue[];
+
 export interface ReferenceNodeObject {
   ['@id']: string;
 }

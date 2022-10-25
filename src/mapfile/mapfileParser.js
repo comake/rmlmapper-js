@@ -68,20 +68,20 @@ const getTopLevelMappings = (graphArray) => {
   const toplevelMappings = [];
   if (!graphArray || !graphArray.length) {
     // graphArray is not an array
-    throw ('Error during processing mapfile: Wrong shape!');
+    throw new Error('Error during processing mapfile: Wrong shape!');
   }
   graphArray.forEach((e) => {
     const id = e['@id'];
     if (hasLogicalSource(e) && !isFunction(e)) {
       if (!hasSubjectMap(e)) {
-        throw (`${id} is missing a subjectMap!`);
+        throw new Error(`${id} is missing a subjectMap!`);
       }
       toplevelMappings.push(id);
     }
   });
   if (graphArray.length === 0) {
     // mapfile does not contain any toplevel mappings
-    throw ('getTopLevelMappings(): Error during processing mapfile: no toplevel found! (only blank nodes)');
+    throw new Error('getTopLevelMappings(): Error during processing mapfile: no toplevel found! (only blank nodes)');
   }
   return toplevelMappings;
 };

@@ -1140,7 +1140,6 @@ describe('Parsing', (): void => {
     const options = {
       functions: {
         'http://example.com/sum_array_of_number_objects'(data: any): string {
-          console.log(data);
           return data['http://example.com/input']
             .map((input: Record<string, NodeObject>): number =>
               Number.parseInt(input['http://example.com/number']['@value'] as string, 10))
@@ -1154,7 +1153,6 @@ describe('Parsing', (): void => {
       './test/assets/nestedMappingInFunctionParameter/out.json',
       options,
     ) as NodeObject[];
-    console.log(result);
     assert.equal(result[0]['http://example.com/value'], 6);
   });
 });

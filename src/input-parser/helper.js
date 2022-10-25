@@ -1,6 +1,7 @@
 const { addArray } = require('../util/ArrayUtil');
 const dom = require('@xmldom/xmldom').DOMParser;
 const prefixHelper = require('../helper/prefixHelper.js');
+const { RDF } = require('../util/Vocabulary');
 
 const cleanString = (path) => {
   if (path.startsWith('.') || path.startsWith('/')) {
@@ -9,50 +10,53 @@ const cleanString = (path) => {
   return path;
 };
 
-const setObjPredicate = (obj, predicate, dataSet, language, datatype) => {
-  dataSet = addArray(dataSet);
-  for (const data of dataSet) {
-    if (data === undefined) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    if (datatype) {
-      datatype = datatype['@id'] ? datatype['@id'] : datatype;
-    }
-    if (language || datatype) {
-      if (obj[predicate]) {
-        const newObj = {
-          '@type': datatype,
-          '@value': data,
-          '@language': language,
-        };
-        if (typeof obj[predicate] === 'object' && obj[predicate]['@value']) {
-          const temp = obj[predicate];
-          obj[predicate] = [];
-          obj[predicate].push(temp);
-          obj[predicate].push(newObj);
-        } else if (Array.isArray(obj[predicate])) {
-          obj[predicate].push(newObj);
-        } else {
-          const temp = {
-            '@value': obj[predicate],
-          };
-          obj[predicate] = [];
-          obj[predicate].push(temp);
-          obj[predicate].push(newObj);
-        }
+function setValueAtPredicate(obj, predicate, data, language, datatype) {
+  if (language || datatype) {
+    if (obj[predicate]) {
+      const newValue = {
+        '@type': datatype,
+        '@value': data,
+        '@language': language,
+      };
+      if (typeof obj[predicate] === 'object' && obj[predicate]['@value']) {
+        const previousValue = obj[predicate];
+        obj[predicate] = [];
+        obj[predicate].push(previousValue);
+        obj[predicate].push(newValue);
+      } else if (Array.isArray(obj[predicate])) {
+        obj[predicate].push(newValue);
       } else {
-        obj[predicate] = {};
-        obj[predicate]['@value'] = data;
-        obj[predicate]['@type'] = datatype;
-        obj[predicate]['@language'] = language;
+        const previousValue = {
+          '@value': obj[predicate],
+        };
+        obj[predicate] = [];
+        obj[predicate].push(previousValue);
+        obj[predicate].push(newValue);
       }
-    } else if (obj[predicate]) {
-      obj[predicate] = addArray(obj[predicate]);
-      obj[predicate].push(data);
     } else {
-      obj[predicate] = data;
+      obj[predicate] = {};
+      obj[predicate]['@value'] = data;
+      obj[predicate]['@type'] = datatype;
+      obj[predicate]['@language'] = language;
     }
+  } else if (obj[predicate]) {
+    obj[predicate] = addArray(obj[predicate]);
+    obj[predicate].push(data);
+  } else {
+    obj[predicate] = data;
+  }
+}
+
+const setObjPredicate = (obj, predicate, dataSet, language, datatype) => {
+  if (datatype) {
+    datatype = datatype['@id'] ? datatype['@id'] : datatype;
+  }
+  if (datatype === RDF.JSON) {
+    datatype = '@json';
+  }
+  dataSet = addArray(dataSet).filter((data) => data !== undefined);
+  for (const data of dataSet) {
+    setValueAtPredicate(obj, predicate, data, language, datatype);
   }
 };
 
@@ -107,7 +111,7 @@ const readFileStringSimple = (source, options) => {
   if (options && options.inputFiles && options.inputFiles[source]) {
     return options.inputFiles[source];
   }
-  throw (`File ${source} not specified!`);
+  throw new Error(`File ${source} not specified!`);
 };
 
 const readFileJSONSimple = (source, options) => {
@@ -220,7 +224,7 @@ const getPredicate = (mapping, prefixes) => {
       predicate = getConstant(predicate.constant, prefixes);
     }
   } else {
-    throw ('Error: no predicate specified!');
+    throw new Error('Error: no predicate specified!');
   }
   return predicate;
 };

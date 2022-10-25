@@ -41,28 +41,27 @@ export class MappingProcessor {
     this.prefixes = args.prefixes;
     this.mapping = args.mapping;
     this.data = args.data;
-
     switch (args.referenceFormulation) {
       case 'XPath': {
         if (args.options.xpathLib === 'fontoxpath') {
           const reader = new FontoxpathSourceReader(args.sourceCache, args.options);
           const source = reader.readSourceWithCache(args.source);
-          this.sourceParser = new FontoxpathParser(source, args.iterator);
+          this.sourceParser = new FontoxpathParser({ source, iterator: args.iterator, options: args.options });
         } else {
           const reader = new XmlSourceReader(args.sourceCache, args.options);
           const source = reader.readSourceWithCache(args.source);
-          this.sourceParser = new XmlParser(source, args.iterator);
+          this.sourceParser = new XmlParser({ source, iterator: args.iterator, options: args.options });
         }
         break;
       } case 'JSONPath': {
         const reader = new JsonSourceReader(args.sourceCache, args.options);
         const source = reader.readSourceWithCache(args.source);
-        this.sourceParser = new JsonParser(source, args.iterator);
+        this.sourceParser = new JsonParser({ source, iterator: args.iterator, options: args.options });
         break;
       } case 'CSV': {
         const reader = new CsvSourceReader(args.sourceCache, args.options);
         const source = reader.readSourceWithCache(args.source);
-        this.sourceParser = new CsvParser(source, args.options);
+        this.sourceParser = new CsvParser({ source, iterator: args.iterator, options: args.options });
         break;
       } default:
         throw new Error(`Cannot process: ${args.referenceFormulation}`);
@@ -70,7 +69,7 @@ export class MappingProcessor {
 
     this.functionExecutor = new FunctionExecutor({
       parser: this.sourceParser,
-      options: args.options,
+      functions: args.options.functions,
       prefixes: args.prefixes,
     });
   }
@@ -110,21 +109,21 @@ export class MappingProcessor {
         type = prefixhelper.replacePrefixWithURL(subjectMap.class['@id'], this.prefixes);
       }
     }
-    const functionClassMap = subjectMap.class?.functionValue ? subjectMap.class : undefined;
+    const subjectFunctionValue = subjectMap.class?.functionValue;
 
     let result = [];
     if (subjectMap.reference) {
       for (let i = 0; i < iteratorNumber; i++) {
-        if (functionClassMap) {
+        if (subjectFunctionValue) {
           type = await this.functionExecutor.executeFunctionFromValue(
-            functionClassMap.functionValue,
+            subjectFunctionValue,
             i,
             topLevelMappingProcessors,
           );
         }
         let obj: Record<string, any> = {};
         this.count += 1;
-        let nodes = this.functionExecutor.getDataFromParser(i, subjectMap.reference);
+        let nodes = this.sourceParser.getData(i, subjectMap.reference);
         nodes = addArray(nodes);
         // Needs to be done in sequence, since result.push() is done.
         // for await ()  is bad practice when we use it with something other than an asynchronous iterator - https://stackoverflow.com/questions/59694309/for-await-of-vs-promise-all
@@ -133,7 +132,7 @@ export class MappingProcessor {
             obj['@type'] = type;
           }
           temp = helper.isURL(temp) ? temp : helper.addBase(temp, this.prefixes);
-          if (temp.includes(' ')) {
+          if (!temp.includes(' ')) {
             obj['@id'] = temp;
             obj = await this.doObjectMappings(i, obj, topLevelMappingProcessors);
 
@@ -148,9 +147,9 @@ export class MappingProcessor {
     } else if (subjectMap.template) {
       this.count += 1;
       for (let i = 0; i < iteratorNumber; i++) {
-        if (functionClassMap) {
+        if (subjectFunctionValue) {
           type = await this.functionExecutor.executeFunctionFromValue(
-            functionClassMap.functionValue,
+            subjectFunctionValue,
             i,
             topLevelMappingProcessors,
           );
@@ -213,9 +212,9 @@ export class MappingProcessor {
     )) {
       // BlankNode with no template or id
       for (let i = 0; i < iteratorNumber; i++) {
-        if (functionClassMap) {
+        if (subjectFunctionValue) {
           type = await this.functionExecutor.executeFunctionFromValue(
-            functionClassMap.functionValue,
+            subjectFunctionValue,
             i,
             topLevelMappingProcessors,
           );
@@ -252,7 +251,7 @@ export class MappingProcessor {
     }
     for (const parent of parents) {
       if (!obj.$parentPaths[parent]) {
-        obj.$parentPaths[parent] = this.functionExecutor.getDataFromParser(index, parent);
+        obj.$parentPaths[parent] = this.sourceParser.getData(index, parent);
       }
     }
   }
@@ -367,7 +366,7 @@ export class MappingProcessor {
             });
           } else if (reference) {
             // We have a reference definition
-            let ns = this.functionExecutor.getDataFromParser(index, reference);
+            let ns = this.sourceParser.getData(index, reference, datatype);
             let arr: any[] = [];
             ns = addArray(ns);
             ns.forEach((en): void => {
@@ -414,7 +413,7 @@ export class MappingProcessor {
               obj.$parentTriplesMap[predicate].push({
                 joinCondition: joinConditions.map((cond): any => ({
                   parentPath: cond.parent,
-                  child: this.functionExecutor.getDataFromParser(index, cond.child),
+                  child: this.sourceParser.getData(index, cond.child),
                 })),
                 mapID: objectmap['@id'],
               });
@@ -458,7 +457,7 @@ export class MappingProcessor {
       words.push(template.slice(beginningValue + 1, closedBracketIndicies[idx]));
     });
     words.forEach((word): void => {
-      const temp = addArray(this.functionExecutor.getDataFromParser(index, word));
+      const temp = addArray(this.sourceParser.getData(index, word));
       toInsert.push(temp);
     });
     const allCombinations = helper.allPossibleCases(toInsert) as string[][];
@@ -483,7 +482,7 @@ export class MappingProcessor {
       return termMap.constant;
     }
     if (termMap.reference) {
-      const vals = this.functionExecutor.getDataFromParser(index, termMap.reference);
+      const vals = this.sourceParser.getData(index, termMap.reference);
       return addArray(vals)[0];
     }
     if (termMap.template) {

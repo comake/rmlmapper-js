@@ -10,10 +10,22 @@ export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
   'BlankNode',
   'IRI',
   'Literal',
+  'constant',
+  'parentTriplesMap',
+  'object',
+  'objectMap',
+]);
+
+export const RML = createNamespace('http://semweb.mmlab.be/ns/rml#', [
+  'reference',
 ]);
 
 export const FNO = createNamespace('http://w3id.org/function/ontology#', [
   'executes',
+]);
+
+export const FNML = createNamespace('http://semweb.mmlab.be/ns/fnml#', [
+  'functionValue',
 ]);
 
 export const FNO_HTTPS = createNamespace('https://w3id.org/function/ontology#', [
@@ -32,6 +44,7 @@ export const RDF = createNamespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#'
   'first',
   'rest',
   'datatype',
+  'JSON',
 ]);
 
 export const RDFS = createNamespace('http://www.w3.org/2000/01/rdf-schema#', [

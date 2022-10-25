@@ -25,42 +25,21 @@ type FnoFunctionParameter = ObjectMap & { predicate: string };
 
 const templateRegex = /(?:\{(.*?)\})/ug;
 
-interface FunctionExecutorOptions {
-  functions?: Record<string, FnoFunction>;
-  ignoreEmptyStrings?: boolean;
-  ignoreValues?: string[];
-}
-
 interface FunctionExecutorArgs {
   parser: SourceParser;
   prefixes: Prefixes;
-  options?: FunctionExecutorOptions;
+  functions?: Record<string, FnoFunction>;
 }
 
 export class FunctionExecutor {
   private readonly parser: SourceParser;
   private readonly prefixes: Prefixes;
   private readonly functions?: Record<string, FnoFunction>;
-  private readonly ignoreEmptyStrings?: boolean;
-  private readonly ignoreValues?: string[];
 
   public constructor(args: FunctionExecutorArgs) {
-    this.functions = args.options?.functions;
+    this.functions = args.functions;
     this.parser = args.parser;
     this.prefixes = args.prefixes;
-    this.ignoreEmptyStrings = args.options?.ignoreEmptyStrings;
-    this.ignoreValues = args.options?.ignoreValues;
-  }
-
-  public getDataFromParser(index: number, query: string): any[] {
-    let values = this.parser.getData(index, query);
-    if (this.ignoreEmptyStrings) {
-      values = values.filter((value: string): boolean => value.trim() !== '');
-    }
-    if (this.ignoreValues) {
-      values = values.filter((value: string): boolean => !this.ignoreValues!.includes(value));
-    }
-    return values;
   }
 
   public async executeFunctionFromValue(
@@ -108,7 +87,7 @@ export class FunctionExecutor {
   }
 
   private getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
-    // TODO [>=1.0.0]: add support for reference and template here?
+    // TODO [>=1.0.0]: add support for reference and template here
     if (Array.isArray(predicateMap)) {
       return predicateMap.map((predicateMapItem): string => getConstant(predicateMapItem.constant, this.prefixes));
     }
@@ -230,7 +209,7 @@ export class FunctionExecutor {
       return getConstant(parameter.constant, this.prefixes);
     }
     if (parameter.reference) {
-      return this.getValueOfReference(parameter.reference, index);
+      return this.getValueOfReference(parameter.reference, index, parameter.datatype);
     }
     if (parameter.template) {
       return this.resolveTemplate(parameter.template, index);
@@ -243,8 +222,8 @@ export class FunctionExecutor {
     }
   }
 
-  private getValueOfReference(reference: string, index: number): any {
-    const data = this.getDataFromParser(index, reference);
+  private getValueOfReference(reference: string, index: number, datatype?: string): OrArray<any> {
+    const data = this.parser.getData(index, reference, datatype);
     return returnFirstItemInArrayOrValue(data);
   }
 
@@ -252,7 +231,7 @@ export class FunctionExecutor {
     let resolvedTemplate = template;
     let match = templateRegex.exec(resolvedTemplate);
     while (match) {
-      const variableValue = this.getDataFromParser(index, match[1]);
+      const variableValue = this.parser.getData(index, match[1]);
       resolvedTemplate = resolvedTemplate.replace(`{${match[1]}}`, variableValue.toString());
       match = templateRegex.exec(resolvedTemplate);
     }

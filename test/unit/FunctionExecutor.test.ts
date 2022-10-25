@@ -4,40 +4,6 @@ import type { SourceParser } from '../../src/input-parser/SourceParser';
 import { FNO, GREL } from '../../src/util/Vocabulary';
 
 describe('A FunctionExector', (): void => {
-  describe('getting data from the parser', (): void => {
-    const values = [ 'a', 'b', '' ];
-    let parser: SourceParser;
-    beforeEach(async(): Promise<void> => {
-      parser = {
-        getData: jest.fn().mockReturnValue(values),
-      } as any;
-    });
-
-    it('returns data matching the query.', async(): Promise<void> => {
-      const executor = new FunctionExecutor({
-        parser,
-        prefixes: {},
-      });
-      expect(executor.getDataFromParser(0, 'query')).toEqual([ 'a', 'b', '' ]);
-    });
-    it('removes empty strings if ignoreEmptyStrings is true.', async(): Promise<void> => {
-      const executor = new FunctionExecutor({
-        parser,
-        prefixes: {},
-        options: { ignoreEmptyStrings: true },
-      });
-      expect(executor.getDataFromParser(0, 'query')).toEqual([ 'a', 'b' ]);
-    });
-    it('does not return values in ignoreValues.', async(): Promise<void> => {
-      const executor = new FunctionExecutor({
-        parser,
-        prefixes: {},
-        options: { ignoreValues: [ 'a', 'b' ]},
-      });
-      expect(executor.getDataFromParser(0, 'query')).toEqual([ '' ]);
-    });
-  });
-
   describe('executing functions', (): void => {
     let parser: SourceParser;
     let executor: FunctionExecutor;
@@ -51,10 +17,8 @@ describe('A FunctionExector', (): void => {
       executor = new FunctionExecutor({
         parser,
         prefixes: {},
-        options: {
-          functions: {
-            'http://example.com#randomFunc': randomFunc,
-          },
+        functions: {
+          'http://example.com#randomFunc': randomFunc,
         },
       });
     });
