@@ -1,6 +1,7 @@
 import { JSONPath } from 'jsonpath-plus';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import { RDF } from '../util/Vocabulary';
+import { SourceParser } from './SourceParser';
+import type { SourceParserArgs } from './SourceParser';
 
 type JsonValue =
   | string
@@ -8,22 +9,22 @@ type JsonValue =
   | boolean
   | JsonValue[];
 
-export class JsonParser implements Parser {
-  private readonly iterator: string;
+export class JsonParser extends SourceParser {
   private readonly json: JSON;
   private readonly paths: string[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    this.iterator = iterator;
-    this.json = helper.readFileJSON(inputPath, options);
-    this.paths = JSONPath({ path: iterator, json: this.json, resultType: 'path' });
+  public constructor(args: SourceParserArgs) {
+    super(args);
+    this.json = args.source;
+    this.paths = JSONPath({ path: args.iterator, json: this.json, resultType: 'path' });
   }
 
   public getCount(): number {
     return this.paths.length;
   }
 
-  public getData(index: number, selector: string): any[] {
+  public getRawData(index: number, selector: string, datatype?: string): string[] {
+    const isJsonDataType = datatype === RDF.JSON;
     const sel = selector.replace(/^PATH~/u, '');
     const splitter = sel.startsWith('[') ? '' : '.';
     const arr = JSONPath({
@@ -35,7 +36,13 @@ export class JsonParser implements Parser {
       .filter((selectedValue: JsonValue): boolean => selectedValue !== null && selectedValue !== undefined);
 
     if (arr.length === 1 && Array.isArray(arr[0])) {
+      if (isJsonDataType) {
+        return arr[0];
+      }
       return arr[0].map((selectedValue: JsonValue): string => selectedValue.toString());
+    }
+    if (isJsonDataType) {
+      return arr;
     }
     return arr.map((selectedValue: JsonValue): string => selectedValue.toString());
   }

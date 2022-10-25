@@ -1,10 +1,11 @@
 import type { NodeObject } from 'jsonld';
+import { replacePrefixWithURL } from '../helper/prefixHelper.js';
 import helper from '../input-parser/helper.js';
-import type { OrArray } from '../util/Types';
-import { RDF } from '../util/Vocabulary';
-import { replacePrefixWithURL } from './prefixHelper.js';
+import { addArray } from './ArrayUtil';
+import type { OrArray } from './Types';
+import { RDF } from './Vocabulary';
 
-export function findIdinObjArr(
+export function findObjectWithIdInArray(
   objArr: any[],
   id: string,
   prefixes: Record<string, string>,
@@ -49,7 +50,7 @@ export function removeMetaFromAllNodes(jsonLd: NodeObject[]): NodeObject[] {
 export function convertRdfTypeToJsonldType(obj: Record<string, any>): void {
   Object.keys(obj).forEach((key): void => {
     if (key === 'rdf:type' || key === RDF.type) {
-      const temp = helper.addArray(obj[key]);
+      const temp = addArray(obj[key]);
       if (temp?.[0] && typeof temp[0] === 'object') {
         return;
       }

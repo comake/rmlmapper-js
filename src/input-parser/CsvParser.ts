@@ -1,20 +1,18 @@
 import csv from 'csvjson';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import { addArray } from '../util/ArrayUtil';
+import type { SourceParserArgs } from './SourceParser';
+import { SourceParser } from './SourceParser';
 
-export class CsvParser implements Parser {
-  private readonly iterator: string;
+export class CsvParser extends SourceParser {
   private readonly data: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    this.iterator = iterator;
-    const csvString = helper.readFileCSV(inputPath, options) as string;
-
+  public constructor(args: SourceParserArgs) {
+    super(args);
     const csvOptions = {
-      delimiter: options.csv?.delimiter ?? ',',
+      delimiter: args.options.csv?.delimiter ?? ',',
     };
 
-    const result = csv.toObject(csvString, csvOptions);
+    const result = csv.toObject(args.source, csvOptions);
     this.data = result;
   }
 
@@ -22,12 +20,12 @@ export class CsvParser implements Parser {
     return this.data.length;
   }
 
-  public getData(index: number, selector: string): any[] {
+  public getRawData(index: number, selector: string): string[] {
     if (selector.startsWith('PATH~')) {
       return [ index.toString() ];
     }
     if (this.data[index]?.[selector]) {
-      return helper.addArray(this.data[index][selector]);
+      return addArray(this.data[index][selector]);
     }
     return [];
   }

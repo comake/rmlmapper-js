@@ -1,0 +1,8 @@
+{
+  "name":"Tom A.",
+  "favorite-numbers": [ 
+    { "value": 3 }, 
+    { "value": 2 }, 
+    { "value": 1 } 
+  ]
+}

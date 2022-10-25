@@ -3,6 +3,7 @@ const jsonld = require('jsonld');
 const helper = require('../input-parser/helper.js');
 const prefixHelper = require('../helper/prefixHelper.js');
 const { jsonLDGraphToObj } = require('../helper/replace.js');
+const { addArray } = require('../util/ArrayUtil');
 
 const quadsToJsonLD = async (nquads) => {
   let doc = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
@@ -46,7 +47,7 @@ function hasSubjectMap(e) {
 
 function isFunction(e) {
   if (e.predicateObjectMap) {
-    const predicateObjectMap = helper.addArray(e.predicateObjectMap);
+    const predicateObjectMap = addArray(e.predicateObjectMap);
     for (const obj of predicateObjectMap) {
       if (obj.predicate && obj.predicate['@id'] && obj.predicate['@id'].indexOf('executes') !== -1) {
         return true;
@@ -67,20 +68,20 @@ const getTopLevelMappings = (graphArray) => {
   const toplevelMappings = [];
   if (!graphArray || !graphArray.length) {
     // graphArray is not an array
-    throw ('Error during processing mapfile: Wrong shape!');
+    throw new Error('Error during processing mapfile: Wrong shape!');
   }
   graphArray.forEach((e) => {
     const id = e['@id'];
     if (hasLogicalSource(e) && !isFunction(e)) {
       if (!hasSubjectMap(e)) {
-        throw (`${id} is missing a subjectMap!`);
+        throw new Error(`${id} is missing a subjectMap!`);
       }
       toplevelMappings.push(id);
     }
   });
   if (graphArray.length === 0) {
     // mapfile does not contain any toplevel mappings
-    throw ('getTopLevelMappings(): Error during processing mapfile: no toplevel found! (only blank nodes)');
+    throw new Error('getTopLevelMappings(): Error during processing mapfile: no toplevel found! (only blank nodes)');
   }
   return toplevelMappings;
 };

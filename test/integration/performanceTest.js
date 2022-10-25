@@ -25,7 +25,7 @@ const countTimeForExecutionJSON = async (count, obj) => {
   const mapfile = fs.readFileSync(`${__dirname}/mapfile.ttl`, 'utf-8');
   const files = { './input.json': data };
   const before = Date.now();
-  const d = await rmlmapperjs.parseFileLive(mapfile, files, options);
+  const d = await rmlmapperjs.parse(mapfile, files, options);
   obj[count] = Date.now() - before;
   return d;
 };
@@ -51,7 +51,7 @@ const countTimeForExecutionXML = async (count, obj, performanceMode) => {
   const mapfile = fs.readFileSync(`${__dirname}/mapfilexml.ttl`, 'utf-8');
   const files = { './input.xml': data };
   const before = Date.now();
-  const d = await rmlmapperjs.parseFileLive(mapfile, files, options);
+  const d = await rmlmapperjs.parse(mapfile, files, options);
   obj[count] = Date.now() - before;
   return d;
 };

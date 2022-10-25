@@ -1,8 +1,7 @@
 import { registerCustomXPathFunction, evaluateXPathToNodes, evaluateXPath, evaluateXPathToStrings } from 'fontoxpath';
-import type { Document } from 'slimdom';
 import { DOMParser } from 'slimdom';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import type { SourceParserArgs } from './SourceParser';
+import { SourceParser } from './SourceParser';
 
 function parseXml(xml: string): any {
   return new DOMParser().parseFromString(xml, 'text/xml');
@@ -15,14 +14,14 @@ registerCustomXPathFunction(
   (context, xml): Document => parseXml(xml),
 );
 
-export class FontoxpathParser implements Parser {
+export class FontoxpathParser extends SourceParser {
   private readonly docArray: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    const doc = helper.readFileString(inputPath, options);
+  public constructor(args: SourceParserArgs) {
+    super(args);
     this.docArray = evaluateXPathToNodes(
-      iterator,
-      parseXml(doc),
+      args.iterator,
+      args.source,
       null,
       null,
       { language: evaluateXPath.XPATH_3_1_LANGUAGE },
@@ -33,18 +32,17 @@ export class FontoxpathParser implements Parser {
     return this.docArray.length;
   }
 
-  public getData(index: number, selector: string): any[] {
+  public getRawData(index: number, selector: string): string[] {
     if (selector.startsWith('PATH~')) {
       selector = `${selector.slice(5)}/path()`;
     }
     const object = this.docArray[index];
-    const strings = evaluateXPathToStrings(
+    return evaluateXPathToStrings(
       selector,
       object,
       null,
       null,
       { language: evaluateXPath.XPATH_3_1_LANGUAGE },
     );
-    return strings;
   }
 }

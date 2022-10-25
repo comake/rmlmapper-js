@@ -1,6 +1,6 @@
 import xpath from 'xpath';
-import helper from './helper.js';
-import type { Parser } from './Parser';
+import type { SourceParserArgs } from './SourceParser';
+import { SourceParser } from './SourceParser';
 
 // Adapted from https://stackoverflow.com/a/30227178
 function getPathToElem(element: xpath.SelectedValue): string {
@@ -26,22 +26,22 @@ function getPathToElem(element: xpath.SelectedValue): string {
   return '';
 }
 
-export class XmlParser implements Parser {
+export class XmlParser extends SourceParser {
   private readonly docArray: any[];
 
-  public constructor(inputPath: string, iterator: string, options: Record<string, any>) {
-    const doc = helper.readFileXML(inputPath, options);
-    this.docArray = xpath.select(iterator, doc);
+  public constructor(args: SourceParserArgs) {
+    super(args);
+    this.docArray = xpath.select(args.iterator, args.source);
   }
 
   public getCount(): number {
     return this.docArray.length;
   }
 
-  public getData(index: number, path: string): any[] {
+  public getRawData(index: number, path: string): string[] {
     const object = this.docArray[index];
     const temp = xpath.select(path.replace(/^PATH~/u, ''), object);
-    const arr: any[] = [];
+    const arr: string[] = [];
     if (path.startsWith('PATH~') && Array.isArray(temp)) {
       return temp.map(getPathToElem);
     }
@@ -56,9 +56,9 @@ export class XmlParser implements Parser {
           const children = node.childNodes;
           if (children) {
             // eslint-disable-next-line unicorn/prefer-spread
-            Array.from(children).forEach((child: any): void => {
-              if (child.data) {
-                arr.push(child.data);
+            Array.from(children).forEach((child: ChildNode): void => {
+              if ('data' in child) {
+                arr.push((child as ChildNode & { data: string }).data);
               }
             });
           }
