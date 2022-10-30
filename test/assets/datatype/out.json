@@ -7,7 +7,7 @@
     "@type": "http://mytestprefix.org/Person",
     "http://mytestprefix.org/age": {
       "@type": "xsd:integer",
-      "@value": "15"
+      "@value": 15
     },
     "http://mytestprefix.org/name": {
       "@type": "xsd:string",

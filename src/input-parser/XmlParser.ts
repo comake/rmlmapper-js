@@ -38,7 +38,7 @@ export class XmlParser extends SourceParser {
     return this.docArray.length;
   }
 
-  public getRawData(index: number, path: string): string[] {
+  public getRawData(index: number, path: string): any[] {
     const object = this.docArray[index];
     const temp = xpath.select(path.replace(/^PATH~/u, ''), object);
     const arr: string[] = [];

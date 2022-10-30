@@ -32,7 +32,7 @@ export class FontoxpathParser extends SourceParser {
     return this.docArray.length;
   }
 
-  public getRawData(index: number, selector: string): string[] {
+  public getRawData(index: number, selector: string): any[] {
     if (selector.startsWith('PATH~')) {
       selector = `${selector.slice(5)}/path()`;
     }

@@ -4,16 +4,16 @@
     "http://schema.org/name": "Tom A.",
     "http://example.com/favorite-numbers": [
       {
-        "@value": "3",
+        "@value": 3,
         "@type": "http://www.w3.org/2001/XMLSchema#integer"
       },
       {
         "@type": "http://www.w3.org/2001/XMLSchema#integer",
-        "@value": "33"
+        "@value": 33
       },
       {
         "@type": "http://www.w3.org/2001/XMLSchema#integer",
-        "@value": "13"
+        "@value": 13
       }
     ],
     "@id": "_:http%3A%2F%2Fexample.test%2F%23Mapping_1"

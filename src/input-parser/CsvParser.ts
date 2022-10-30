@@ -20,7 +20,7 @@ export class CsvParser extends SourceParser {
     return this.data.length;
   }
 
-  public getRawData(index: number, selector: string): string[] {
+  public getRawData(index: number, selector: string): any[] {
     if (selector.startsWith('PATH~')) {
       return [ index.toString() ];
     }

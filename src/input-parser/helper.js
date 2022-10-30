@@ -107,52 +107,6 @@ const addToObjInId = (obj, pred, data) => {
   }
 };
 
-const readFileStringSimple = (source, options) => {
-  if (options && options.inputFiles && options.inputFiles[source]) {
-    return options.inputFiles[source];
-  }
-  throw new Error(`File ${source} not specified!`);
-};
-
-const readFileJSONSimple = (source, options) => {
-  const jsonStr = readFileStringSimple(source, options);
-  const jsonObj = JSON.parse(jsonStr);
-  return jsonObj;
-};
-
-const readFileXMLSimple = (source, options) => {
-  let xmlStr = readFileStringSimple(source, options);
-  if (options && options.removeNameSpace) {
-    // remove namespace from data
-    for (const key in options.removeNameSpace) {
-      const toDelete = `${key}="${options.removeNameSpace[key]}"`;
-      xmlStr = xmlStr.replace(toDelete, '');
-    }
-  }
-  const doc = new dom().parseFromString(xmlStr);
-  return doc;
-};
-
-const withCache = (fn, source, options) => {
-  if (!options.cache) {
-    options.cache = {};
-  }
-  if (options.cache[source]) {
-    return options.cache[source];
-  }
-  const result = fn(source, options);
-  options.cache[source] = result;
-  return result;
-};
-
-const readFileJSON = (source, options) => withCache(readFileJSONSimple, source, options);
-
-const readFileXML = (source, options) => withCache(readFileXMLSimple, source, options);
-
-const readFileCSV = (source, options) => withCache(readFileStringSimple, source, options);
-
-const readFileString = (source, options) => withCache(readFileStringSimple, source, options);
-
 /* const pattern = new RegExp('^(https?:\\/\\/)?'
         + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'
         + '((\\d{1,3}\\.){3}\\d{1,3}))'
@@ -240,10 +194,6 @@ module.exports.locations = locations;
 module.exports.cutArray = cutArray;
 module.exports.addToObj = addToObj;
 module.exports.addToObjInId = addToObjInId;
-module.exports.readFileJSON = readFileJSON;
-module.exports.readFileCSV = readFileCSV;
-module.exports.readFileXML = readFileXML;
-module.exports.readFileString = readFileString;
 module.exports.isURL = isURL;
 module.exports.addBase = addBase;
 module.exports.getConstant = getConstant;

@@ -79,6 +79,7 @@ export const GREL = createNamespace('http://users.ugent.be/~bjdmeest/function/gr
   'p_array_a',
   'string_endsWith',
   'valueParameter',
+  'valueParameter2',
   'string_sub',
   'string_replace',
   'p_string_find',

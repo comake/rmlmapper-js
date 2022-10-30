@@ -3,6 +3,6 @@
     "@id": "http://example.com/data/1234",
     "@type": "http://schema.org/Person",
     "http://schema.org/name": "Tom A.",
-    "http://schema.org/age": "15"
+    "http://schema.org/age": 15
   }
 ]

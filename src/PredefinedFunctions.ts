@@ -110,11 +110,11 @@ export const predefinedFunctions = {
   [GREL.math_min](data: Record<string | number, any>): number {
     return Math.min(Number.parseInt(data[GREL.p_dec_n], 10), Number.parseInt(data[GREL.param_n2], 10));
   },
-  [IDLAB.equal](args: Record<string | number, any>): boolean {
-    return args[0] === args[1];
+  [IDLAB.equal](data: Record<string | number, any>): boolean {
+    return data[GREL.valueParameter] === data[GREL.valueParameter2];
   },
-  [IDLAB.notEqual](args: Record<string | number, any>): boolean {
-    return args[0] !== args[1];
+  [IDLAB.notEqual](data: Record<string | number, any>): boolean {
+    return data[GREL.valueParameter] !== data[GREL.valueParameter2];
   },
   [IDLAB.getMIMEType](data: Record<string | number, any>): any {
     return mime.lookup(data[IDLAB.str] as string);

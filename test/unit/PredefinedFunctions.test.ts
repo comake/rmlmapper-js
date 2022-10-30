@@ -308,31 +308,73 @@ describe('mapper functions', (): void => {
 
   describe('idlab:equal', (): void => {
     it('returns true if the two args are equal.', (): void => {
-      expect(predefinedFunctions[IDLAB.equal]([ 'abc', 'abc' ])).toBe(true);
-      expect(predefinedFunctions[IDLAB.equal]([ 123, 123 ])).toBe(true);
-      expect(predefinedFunctions[IDLAB.equal]([ 1.1234, 1.1234 ])).toBe(true);
-      expect(predefinedFunctions[IDLAB.equal]([ true, true ])).toBe(true);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: 'abc',
+        [GREL.valueParameter2]: 'abc',
+      })).toBe(true);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: 123,
+        [GREL.valueParameter2]: 123,
+      })).toBe(true);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: 1.1234,
+        [GREL.valueParameter2]: 1.1234,
+      })).toBe(true);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: true,
+        [GREL.valueParameter2]: true,
+      })).toBe(true);
     });
 
     it('returns false if the two args are unequal.', (): void => {
-      expect(predefinedFunctions[IDLAB.equal]([ 'abc', 'cba' ])).toBe(false);
-      expect(predefinedFunctions[IDLAB.equal]([ true, 'true' ])).toBe(false);
-      expect(predefinedFunctions[IDLAB.equal]([ 1, '1' ])).toBe(false);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: 'abc',
+        [GREL.valueParameter2]: 'cba',
+      })).toBe(false);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: true,
+        [GREL.valueParameter2]: 'true',
+      })).toBe(false);
+      expect(predefinedFunctions[IDLAB.equal]({
+        [GREL.valueParameter]: 1,
+        [GREL.valueParameter2]: '1',
+      })).toBe(false);
     });
   });
 
   describe('idlab:notEqual', (): void => {
     it('returns false if the two args are equal.', (): void => {
-      expect(predefinedFunctions[IDLAB.notEqual]([ 'abc', 'abc' ])).toBe(false);
-      expect(predefinedFunctions[IDLAB.notEqual]([ 123, 123 ])).toBe(false);
-      expect(predefinedFunctions[IDLAB.notEqual]([ 1.1234, 1.1234 ])).toBe(false);
-      expect(predefinedFunctions[IDLAB.notEqual]([ true, true ])).toBe(false);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: 'abc',
+        [GREL.valueParameter2]: 'abc',
+      })).toBe(false);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: 123,
+        [GREL.valueParameter2]: 123,
+      })).toBe(false);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: 1.1234,
+        [GREL.valueParameter2]: 1.1234,
+      })).toBe(false);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: true,
+        [GREL.valueParameter2]: true,
+      })).toBe(false);
     });
 
     it('returns true if the two args are unequal.', (): void => {
-      expect(predefinedFunctions[IDLAB.notEqual]([ 'abc', 'cba' ])).toBe(true);
-      expect(predefinedFunctions[IDLAB.notEqual]([ true, 'true' ])).toBe(true);
-      expect(predefinedFunctions[IDLAB.notEqual]([ 1, '1' ])).toBe(true);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: 'abc',
+        [GREL.valueParameter2]: 'cba',
+      })).toBe(true);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: true,
+        [GREL.valueParameter2]: 'true',
+      })).toBe(true);
+      expect(predefinedFunctions[IDLAB.notEqual]({
+        [GREL.valueParameter]: 1,
+        [GREL.valueParameter2]: '1',
+      })).toBe(true);
     });
   });
 

@@ -1,7 +1,7 @@
 [
   {
     "@type": "http://schema.org/Person",
-    "http://schema.org/age": "15",
+    "http://schema.org/age": 15,
     "@id": "_:http%3A%2F%2Fexample.test%2F%23AGEmapping_1"
   },
   {
