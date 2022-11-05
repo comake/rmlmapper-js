@@ -54,9 +54,14 @@ const setObjPredicate = (obj, predicate, dataSet, language, datatype) => {
   if (datatype === RDF.JSON) {
     datatype = '@json';
   }
-  dataSet = addArray(dataSet).filter((data) => data !== undefined);
-  for (const data of dataSet) {
-    setValueAtPredicate(obj, predicate, data, language, datatype);
+
+  if (datatype === '@json') {
+    setValueAtPredicate(obj, predicate, dataSet, language, datatype);
+  } else {
+    dataSet = addArray(dataSet).filter((data) => data !== undefined);
+    for (const data of dataSet) {
+      setValueAtPredicate(obj, predicate, data, language, datatype);
+    }
   }
 };
 
