@@ -104,6 +104,12 @@ export const predefinedFunctions = {
   [GREL.string_split](data: Record<string | number, any>): string[] {
     return data[GREL.valueParameter].split(data[GREL.p_string_sep]);
   },
+  [GREL.string_toString](data: Record<string | number, any>): string {
+    if (typeof data[GREL.p_any_e] === 'object') {
+      return JSON.stringify(data[GREL.p_any_e]);
+    }
+    return data[GREL.p_any_e].toString();
+  },
   [GREL.math_max](data: Record<string | number, any>): number {
     return Math.max(Number.parseInt(data[GREL.p_dec_n], 10), Number.parseInt(data[GREL.param_n2], 10));
   },

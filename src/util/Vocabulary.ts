@@ -102,6 +102,8 @@ export const GREL = createNamespace('http://users.ugent.be/~bjdmeest/function/gr
   'boolean_or',
   'param_rep_b',
   'toUpperCase',
+  'string_toString',
+  'p_any_e',
 ]);
 
 export const IDLAB = createNamespace('http://example.com/idlab/function/', [

@@ -292,6 +292,16 @@ describe('mapper functions', (): void => {
     });
   });
 
+  describe('grel:string_toString', (): void => {
+    it('returns the strigified version of the p_any_e param.', (): void => {
+      expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: 123 })).toBe('123');
+      expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: true })).toBe('true');
+      expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: 'a string' })).toBe('a string');
+      expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: { arg: 2 }})).toBe('{"arg":2}');
+      expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: [ 1, 2, 3 ]})).toBe('[1,2,3]');
+    });
+  });
+
   describe('grel:math_max', (): void => {
     it('returns the maximum of two numbers.', (): void => {
       expect(predefinedFunctions[GREL.math_max]({ [GREL.p_dec_n]: 3, [GREL.param_n2]: 2 })).toBe(3);
