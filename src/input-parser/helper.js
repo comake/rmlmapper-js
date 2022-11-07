@@ -1,7 +1,7 @@
 const { addArray } = require('../util/ArrayUtil');
 const dom = require('@xmldom/xmldom').DOMParser;
 const prefixHelper = require('../helper/prefixHelper.js');
-const { RDF } = require('../util/Vocabulary');
+const { RDF, XSD } = require('../util/Vocabulary');
 
 const cleanString = (path) => {
   if (path.startsWith('.') || path.startsWith('/')) {
@@ -78,6 +78,18 @@ const locations = (substring, string) => {
 const getConstant = (constant, prefixes) => {
   if (constant['@id']) {
     return prefixHelper.replacePrefixWithURL(constant['@id'], prefixes);
+  }
+  if (constant['@value']) {
+    if (constant['@type'] === XSD.integer) {
+      return Number.parseInt(constant['@value'], 10);
+    }
+    if (constant['@type'] === XSD.double) {
+      return Number.parseFloat(constant['@value'], 10);
+    }
+    if (constant['@type'] === XSD.boolean) {
+      return constant['@value'] === true || constant['@value'] === 'true'
+    }
+    return constant['@value']
   }
   return constant;
 };
