@@ -20,6 +20,9 @@ yarn add @comake/rmlmapper-js
 ## Support
 
 
+⚠️ **Note**: The documentation below is directly copied from the RocketRML repo. Some of it may be out of date.
+
+
 #### RML Vocabulary
 the following list contains the current supported classes.
 
