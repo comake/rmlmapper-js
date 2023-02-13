@@ -109,7 +109,7 @@ const replaceConstantShortProps = (graph) => {
   graph.push(...newNodes);
 };
 
-// returns object with prefixes, graph, and all top-level mappings
+// returns object with prefixes, data graph, and all top-level mappings
 const expandedJsonMap = async (ttl) => {
   const [response, prefixes] = await ttlToJson(ttl);
   const result = {};

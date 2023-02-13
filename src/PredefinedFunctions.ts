@@ -50,23 +50,26 @@ export const predefinedFunctions = {
     return new Date().toISOString();
   },
   [GREL.date_inc](data: Record<string | number, any>): string {
-    const fromDate = new Date(data[GREL.p_date_d]);
-    const toDate = new Date(fromDate.getTime());
-    const change = Number.parseInt(data[GREL.p_dec_n], 10);
-    if (data[GREL.p_string_unit] === 'year') {
-      toDate.setFullYear(fromDate.getFullYear() + change);
-    } else if (data[GREL.p_string_unit] === 'month') {
-      toDate.setMonth(fromDate.getMonth() + change);
-    } else if (data[GREL.p_string_unit] === 'day') {
-      toDate.setDate(fromDate.getDate() + change);
-    } else if (data[GREL.p_string_unit] === 'hour') {
-      toDate.setHours(fromDate.getHours() + change);
-    } else if (data[GREL.p_string_unit] === 'minute') {
-      toDate.setMinutes(fromDate.getMinutes() + change);
-    } else if (data[GREL.p_string_unit] === 'second') {
-      toDate.setSeconds(fromDate.getSeconds() + change);
+    if (typeof data[GREL.p_date_d] === 'string') {
+      const fromDate = new Date(data[GREL.p_date_d]);
+      const toDate = new Date(fromDate.getTime());
+      const change = Number.parseInt(data[GREL.p_dec_n], 10);
+      if (data[GREL.p_string_unit] === 'year') {
+        toDate.setFullYear(fromDate.getFullYear() + change);
+      } else if (data[GREL.p_string_unit] === 'month') {
+        toDate.setMonth(fromDate.getMonth() + change);
+      } else if (data[GREL.p_string_unit] === 'day') {
+        toDate.setDate(fromDate.getDate() + change);
+      } else if (data[GREL.p_string_unit] === 'hour') {
+        toDate.setHours(fromDate.getHours() + change);
+      } else if (data[GREL.p_string_unit] === 'minute') {
+        toDate.setMinutes(fromDate.getMinutes() + change);
+      } else if (data[GREL.p_string_unit] === 'second') {
+        toDate.setSeconds(fromDate.getSeconds() + change);
+      }
+      return toDate.toISOString();
     }
-    return toDate.toISOString();
+    return '';
   },
   [GREL.array_sum](data: Record<string | number, any>): number {
     const values = data[GREL.p_array_a];
@@ -137,5 +140,8 @@ export const predefinedFunctions = {
       data[IDLAB.str] as string,
       data[IDLAB.otherStr] as string,
     ].join(data[IDLAB.delimiter] as string ?? '');
+  },
+  [IDLAB.listContainsElement](data: Record<string | number, any>): boolean {
+    return data[IDLAB.list].includes(data[IDLAB.str]);
   },
 };

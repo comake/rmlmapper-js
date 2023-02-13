@@ -435,4 +435,20 @@ describe('mapper functions', (): void => {
       })).toBe('helloworld');
     });
   });
+
+  describe('idlab:listContainsElement', (): void => {
+    it('returns true if the list contains the string.', (): void => {
+      expect(predefinedFunctions[IDLAB.listContainsElement]({
+        [IDLAB.str]: 'hello',
+        [IDLAB.list]: [ 'hello', 'world' ],
+      })).toBe(true);
+    });
+
+    it('returns false if the list does not contain the string.', (): void => {
+      expect(predefinedFunctions[IDLAB.listContainsElement]({
+        [IDLAB.str]: 'hello',
+        [IDLAB.list]: [ 'hello', 'otherworld' ],
+      })).toBe(false);
+    });
+  });
 });

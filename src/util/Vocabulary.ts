@@ -1,5 +1,5 @@
-function createNamespace(baseUri: string, localNames: string[]): Record<string, string> {
-  const namespace: Record<string, string> = {};
+function createNamespace<T extends string>(baseUri: string, localNames: T[]): Record<T, string> {
+  const namespace: Record<T, string> = {} as Record<T, string>;
   for (const localName of localNames) {
     namespace[localName] = `${baseUri}${localName}`;
   }
@@ -116,4 +116,6 @@ export const IDLAB = createNamespace('http://example.com/idlab/function/', [
   'random',
   'concat',
   'delimiter',
+  'listContainsElement',
+  'list',
 ]);
