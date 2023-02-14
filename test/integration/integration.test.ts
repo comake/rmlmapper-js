@@ -450,8 +450,8 @@ describe('Parsing', (): void => {
       functions: {
         'http://users.ugent.be/~bjdmeest/function/grel.ttl#string_substring'(data: Record<string, any>): string {
           const value = data[GREL.valueParameter] as string;
-          const from = Number.parseInt(data[GREL.param_int_i_from]['@value'], 10);
-          const to = Number.parseInt(data[GREL.param_int_i_opt_to]['@value'], 10);
+          const from = Number.parseInt(data[GREL.param_int_i_from], 10);
+          const to = Number.parseInt(data[GREL.param_int_i_opt_to], 10);
           return value.slice(from, to);
         },
       },

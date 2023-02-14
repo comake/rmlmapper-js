@@ -1,4 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
+import { RDF } from '../util/Vocabulary';
 import { SourceParser } from './SourceParser';
 import type { SourceParserArgs } from './SourceParser';
 
@@ -22,7 +23,7 @@ export class JsonParser extends SourceParser {
     return this.paths.length;
   }
 
-  public getRawData(index: number, selector: string): any[] {
+  public getRawData(index: number, selector: string, datatype: string): any[] {
     const sel = selector.replace(/^PATH~/u, '');
     const splitter = sel.startsWith('[') ? '' : '.';
     const values = JSONPath({
@@ -33,7 +34,7 @@ export class JsonParser extends SourceParser {
       // Null values are ignored (undefined shouldn't happens since input is json)
       .filter((selectedValue: JsonValue): boolean => selectedValue !== null && selectedValue !== undefined);
 
-    if (values.length === 1 && Array.isArray(values[0])) {
+    if (values.length === 1 && Array.isArray(values[0]) && datatype !== RDF.JSON) {
       return values[0];
     }
     return values;

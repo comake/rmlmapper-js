@@ -439,14 +439,14 @@ describe('mapper functions', (): void => {
   describe('idlab:listContainsElement', (): void => {
     it('returns true if the list contains the string.', (): void => {
       expect(predefinedFunctions[IDLAB.listContainsElement]({
-        [IDLAB.str]: 'hello',
+        [IDLAB.str]: 'world',
         [IDLAB.list]: [ 'hello', 'world' ],
       })).toBe(true);
     });
 
     it('returns false if the list does not contain the string.', (): void => {
       expect(predefinedFunctions[IDLAB.listContainsElement]({
-        [IDLAB.str]: 'hello',
+        [IDLAB.str]: 'world',
         [IDLAB.list]: [ 'hello', 'otherworld' ],
       })).toBe(false);
     });
