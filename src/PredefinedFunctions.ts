@@ -113,6 +113,9 @@ export const predefinedFunctions = {
     }
     return data[GREL.p_any_e].toString();
   },
+  [GREL.string_contains](data: Record<string | number, any>): boolean {
+    return data[GREL.valueParameter].includes(data[GREL.string_sub]);
+  },
   [GREL.math_max](data: Record<string | number, any>): number {
     return Math.max(Number.parseInt(data[GREL.p_dec_n], 10), Number.parseInt(data[GREL.param_n2], 10));
   },
@@ -139,7 +142,9 @@ export const predefinedFunctions = {
     return [
       data[IDLAB.str] as string,
       data[IDLAB.otherStr] as string,
-    ].join(data[IDLAB.delimiter] as string ?? '');
+    ]
+      .filter((str): boolean => typeof str === 'string' && str.length > 0)
+      .join(data[IDLAB.delimiter] as string ?? '');
   },
   [IDLAB.listContainsElement](data: Record<string | number, any>): boolean {
     return data[IDLAB.list].includes(data[IDLAB.str]);

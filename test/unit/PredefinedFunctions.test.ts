@@ -302,6 +302,21 @@ describe('mapper functions', (): void => {
     });
   });
 
+  describe('grel:string_contains', (): void => {
+    it('returns false if the string does not include the substring.', (): void => {
+      expect(predefinedFunctions[GREL.string_contains]({
+        [GREL.valueParameter]: 'hello world',
+        [GREL.string_sub]: 'ward',
+      })).toBe(false);
+    });
+    it('returns true if the string includes the substring.', (): void => {
+      expect(predefinedFunctions[GREL.string_contains]({
+        [GREL.valueParameter]: 'hello world',
+        [GREL.string_sub]: 'world',
+      })).toBe(true);
+    });
+  });
+
   describe('grel:math_max', (): void => {
     it('returns the maximum of two numbers.', (): void => {
       expect(predefinedFunctions[GREL.math_max]({ [GREL.p_dec_n]: 3, [GREL.param_n2]: 2 })).toBe(3);
