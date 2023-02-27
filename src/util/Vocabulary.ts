@@ -103,6 +103,7 @@ export const GREL = createNamespace('http://users.ugent.be/~bjdmeest/function/gr
   'param_rep_b',
   'toUpperCase',
   'string_toString',
+  'string_toNumber',
   'p_any_e',
   'string_contains',
 ]);

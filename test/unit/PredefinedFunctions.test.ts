@@ -18,6 +18,16 @@ describe('mapper functions', (): void => {
       args[GREL.p_string_sep] = args[0];
       expect(predefinedFunctions[GREL.array_join](args)).toBe('a,b');
     });
+    it('joins an array with no separator if one is not provided.', (): void => {
+      const args = [ 'a', 'b', 'c' ] as Record<string | number, any>;
+      args[GREL.p_array_a] = args;
+      expect(predefinedFunctions[GREL.array_join](args)).toBe('abc');
+    });
+    it('returns the array if it is a single value.', (): void => {
+      const args = [] as Record<string | number, any>;
+      args[GREL.p_array_a] = 'a';
+      expect(predefinedFunctions[GREL.array_join](args)).toBe('a');
+    });
   });
 
   describe('grel:controls_if', (): void => {
@@ -128,6 +138,14 @@ describe('mapper functions', (): void => {
   });
 
   describe('grel:date_inc', (): void => {
+    it('returns an empty string if the input date is not a string.', (): void => {
+      expect(predefinedFunctions[GREL.date_inc]({
+        [GREL.p_date_d]: undefined,
+        [GREL.p_dec_n]: 2,
+        [GREL.p_string_unit]: 'year',
+      })).toBe('');
+    });
+
     it('returns a date with the specified unit added or subtracted.', (): void => {
       expect(predefinedFunctions[GREL.date_inc]({
         [GREL.p_date_d]: '2022-08-12T00:00:00.000Z',
@@ -299,6 +317,20 @@ describe('mapper functions', (): void => {
       expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: 'a string' })).toBe('a string');
       expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: { arg: 2 }})).toBe('{"arg":2}');
       expect(predefinedFunctions[GREL.string_toString]({ [GREL.p_any_e]: [ 1, 2, 3 ]})).toBe('[1,2,3]');
+    });
+  });
+
+  describe('grel:string_toNumber', (): void => {
+    it('returns a float for strings with a decimal point.', (): void => {
+      expect(predefinedFunctions[GREL.string_toNumber]({ [GREL.p_any_e]: '33.3' })).toBe(33.3);
+      // eslint-disable-next-line unicorn/no-zero-fractions
+      expect(predefinedFunctions[GREL.string_toNumber]({ [GREL.p_any_e]: '3.0' })).toBe(3.0);
+      expect(predefinedFunctions[GREL.string_toNumber]({ [GREL.p_any_e]: '3.123' })).toBe(3.123);
+    });
+
+    it('returns an integer for strings without a decimal point.', (): void => {
+      expect(predefinedFunctions[GREL.string_toNumber]({ [GREL.p_any_e]: '33' })).toBe(33);
+      expect(predefinedFunctions[GREL.string_toNumber]({ [GREL.p_any_e]: '3' })).toBe(3);
     });
   });
 

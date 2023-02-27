@@ -23,14 +23,14 @@ export const predefinedFunctions = {
       .filter((part): boolean => !(Array.isArray(part) && part.length === 0))
       .join(separator ?? '');
   },
-  [GREL.controls_if](data: Record<string | number, any>): boolean {
+  [GREL.controls_if](data: Record<string | number, any>): boolean | undefined {
     if (
       (typeof data[GREL.bool_b] === 'string' && data[GREL.bool_b] === 'true') ||
       (typeof data[GREL.bool_b] === 'boolean' && data[GREL.bool_b])
     ) {
       return data[GREL.any_true];
     }
-    return data[GREL.any_false] || null;
+    return data[GREL.any_false] || undefined;
   },
   [GREL.string_endsWith](data: Record<string | number, any>): boolean {
     const string = data[GREL.valueParameter];
@@ -112,6 +112,12 @@ export const predefinedFunctions = {
       return JSON.stringify(data[GREL.p_any_e]);
     }
     return data[GREL.p_any_e].toString();
+  },
+  [GREL.string_toNumber](data: Record<string | number, any>): number {
+    if (data[GREL.p_any_e].includes('.')) {
+      return Number.parseFloat(data[GREL.p_any_e]);
+    }
+    return Number.parseInt(data[GREL.p_any_e], 10);
   },
   [GREL.string_contains](data: Record<string | number, any>): boolean {
     return data[GREL.valueParameter].includes(data[GREL.string_sub]);

@@ -469,7 +469,9 @@ export class MappingProcessor {
         }
         finTemp = finTemp.replace(`{${words[idxB]}}`, allCombinations[idxA][idxB]);
       });
-      templates.push(finTemp);
+      if (finTemp.length > 0) {
+        templates.push(finTemp);
+      }
     });
     templates.forEach((thisTemplate: string, idx: number): void => {
       templates[idx] = helper.replaceEscapedChar(prefixhelper.replacePrefixWithURL(thisTemplate, this.prefixes));
