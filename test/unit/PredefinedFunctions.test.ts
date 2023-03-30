@@ -77,7 +77,7 @@ describe('mapper functions', (): void => {
       expect(predefinedFunctions[GREL.controls_if]({
         [GREL.bool_b]: 'example',
         [GREL.any_true]: 'it was true',
-      })).toBeNull();
+      })).toBeUndefined();
     });
   });
 

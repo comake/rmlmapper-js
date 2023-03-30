@@ -211,8 +211,8 @@ export class RmlMapper {
       output = replaceHelper.replace(output);
     }
 
-    if (this.options?.compress) {
-      const compacted = await jsonld.compact(output, this.options.compress);
+    if (this.options?.compact) {
+      const compacted = await jsonld.compact(output, this.options.compact);
       const context = compacted['@context'];
       const graph = compacted['@graph'];
       if (graph && Array.isArray(graph)) {

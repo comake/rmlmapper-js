@@ -1,4 +1,4 @@
-# rmlmapper-js
+# RML Mapper JS
 
 This library is a javascript implementation of a mapper for the [RDF mapping language (RML)](http://rml.io/spec.html).
 
@@ -87,9 +87,9 @@ These are the available options for parsing mappings (in Typescript):
 ```typescript
 export interface ParseOptions {
   /**
-   * A JSON-LD context for json-ld compress
+   * A JSON-LD context to compact the output with
    */
-  compress?: ContextDefinition;
+  compact?: ContextDefinition;
   /**
    * Option to output triples as N-Quads instead of JSON-LD
    */
@@ -145,6 +145,7 @@ const options = {
   replace: false,
 };
 
+// With a Turtle Mapping
 const turtleMapping = `
   @prefix rr: <http://www.w3.org/ns/r2rml#> .
   @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
@@ -159,6 +160,7 @@ const turtleMapping = `
 
 const turtleMappingResult = await parser.parseTurtle(turtleMapping, inputFiles, options);
 
+// With a JSON-LD Mapping
 const jsonLdMapping = {
   '@id': 'https://example.com/#Mapping',
   '@type': 'http://www.w3.org/ns/r2rml#TriplesMap',

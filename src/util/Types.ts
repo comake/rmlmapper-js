@@ -61,9 +61,9 @@ export type Prefixes = Record<string, string>;
 
 export interface ParseOptions {
   /**
-   * A JSON-LD context for json-ld compress
+   * A JSON-LD context to compact the output with
    */
-  compress?: ContextDefinition;
+  compact?: ContextDefinition;
   /**
    * Option to output triples as N-Quads instead of JSON-LD
    */

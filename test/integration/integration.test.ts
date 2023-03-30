@@ -365,7 +365,7 @@ describe('Parsing', (): void => {
 
     it('Double-nested mapping.', async(): Promise<void> => {
       const options = {
-        compress: {
+        compact: {
           '@vocab': 'http://mytestprefix.org/',
         },
         language: 'de',
@@ -879,7 +879,7 @@ describe('Parsing', (): void => {
         './test/assets/datatype/mapping.ttl',
         [ './test/assets/datatype/input.json' ],
         './test/assets/datatype/out.json',
-        { compress: { xsd: 'http://www.w3.org/2001/XMLSchema#' }},
+        { compact: { xsd: 'http://www.w3.org/2001/XMLSchema#' }},
       ) as NodeObject[];
 
       assert.equal((result[0]['http://mytestprefix.org/name'] as NodeObject)['@type'], 'xsd:string');
