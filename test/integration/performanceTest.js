@@ -21,11 +21,10 @@ const generateInputJSON = (number) => {
 
 const countTimeForExecutionJSON = async (count, obj) => {
   const data = JSON.stringify(generateInputJSON(count));
-  const options = { verbose: false };
   const mapfile = fs.readFileSync(`${__dirname}/mapfile.ttl`, 'utf-8');
   const files = { './input.json': data };
   const before = Date.now();
-  const d = await rmlmapperjs.parse(mapfile, files, options);
+  const d = await rmlmapperjs.parse(mapfile, files);
   obj[count] = Date.now() - before;
   return d;
 };
@@ -42,21 +41,17 @@ const generateInputXML = (number) => {
   return output;
 };
 
-const countTimeForExecutionXML = async (count, obj, performanceMode) => {
+const countTimeForExecutionXML = async (count, obj) => {
   const data = JSON.stringify(generateInputXML(count));
-  const options = {
-    verbose: false,
-    xmlPerformanceMode: performanceMode,
-  };
   const mapfile = fs.readFileSync(`${__dirname}/mapfilexml.ttl`, 'utf-8');
   const files = { './input.xml': data };
   const before = Date.now();
-  const d = await rmlmapperjs.parse(mapfile, files, options);
+  const d = await rmlmapperjs.parse(mapfile, files);
   obj[count] = Date.now() - before;
   return d;
 };
 
-const checkPeformance = async (numbersToTest, averageOf, xmlPerformanceMode) => {
+const checkPeformance = async (numbersToTest, averageOf) => {
   const objJSON = {};
   const objXML = {};
 
@@ -81,7 +76,7 @@ const checkPeformance = async (numbersToTest, averageOf, xmlPerformanceMode) => 
     console.log(`doing ${num}`);
     for (let i = 0; i < averageOf; i++) {
       console.log(`${`-iteration ${i + 1}` + ' of '}${averageOf}`);
-      await countTimeForExecutionXML(num, objXML, xmlPerformanceMode);
+      await countTimeForExecutionXML(num, objXML);
       sum += objXML[num];
     }
     objXML[num] = sum / averageOf;
@@ -100,4 +95,4 @@ const checkPeformance = async (numbersToTest, averageOf, xmlPerformanceMode) => 
 // averageOf defines how many times the execution is done per number and then the average is calculated
 // xmlPerformanceMode switches on or off the performance mode for xpath (can only be used in nodejs)
 
-checkPeformance([50000, 10000, 5000, 3000, 1000, 500, 300, 100, 50, 10, 5, 1], 10, true);
+checkPeformance([50000, 10000, 5000, 3000, 1000, 500, 300, 100, 50, 10, 5, 1], 10);

@@ -34,8 +34,18 @@ export class RmlMapper {
     this.options = options;
   }
 
-  public async parse(mapping: string): Promise<NodeObject[] | string> {
-    const res = await mapfile.expandedJsonMap(mapping) as unknown as Res;
+  public async parseJsonLd(mapping: NodeObject): Promise<NodeObject[] | string> {
+    const res = await mapfile.expandedJsonMapFromJsonLd(mapping) as unknown as Res;
+    const output = await this.process(res);
+    const out = await this.clean(output);
+    if (this.options.toRDF) {
+      return await jsonld.toRDF(out, { format: 'application/n-quads' }) as unknown as string;
+    }
+    return out;
+  }
+
+  public async parseTurtle(mapping: string): Promise<NodeObject[] | string> {
+    const res = await mapfile.expandedJsonMapFromTurtle(mapping) as unknown as Res;
     const output = await this.process(res);
     const out = await this.clean(output);
     if (this.options.toRDF) {
@@ -50,7 +60,7 @@ export class RmlMapper {
       let mapping = findObjectWithIdInArray(res.data, mappingId, res.prefixes);
       if (mapping) {
         mapping = prefixhelper.checkAndRemovePrefixesFromObject(mapping, res.prefixes) as NodeObject;
-        this.topLevelMappingProcessors[mappingId] = this.getProcessorForMapping(res, mapping);
+        this.topLevelMappingProcessors[mappingId] = this.createProcessorForMapping(res, mapping);
       }
     }
 
@@ -65,7 +75,7 @@ export class RmlMapper {
     return output;
   }
 
-  private getProcessorForMapping(
+  private createProcessorForMapping(
     res: Res,
     mapping: any,
   ): MappingProcessor {
@@ -226,12 +236,31 @@ export class RmlMapper {
   }
 }
 
-export async function parse(
+export async function parseTurtle(
   mapping: string,
   inputFiles: Record<string, string>,
   options: ParseOptions = {},
 ): Promise<string | jsonld.NodeObject[]> {
   const rmlMapper = new RmlMapper({ ...options, inputFiles });
-  return await rmlMapper.parse(mapping);
+  return await rmlMapper.parseTurtle(mapping);
 }
 
+export async function parseJsonLd(
+  mapping: NodeObject,
+  inputFiles: Record<string, string>,
+  options: ParseOptions = {},
+): Promise<string | jsonld.NodeObject[]> {
+  const rmlMapper = new RmlMapper({ ...options, inputFiles });
+  return await rmlMapper.parseJsonLd(mapping);
+}
+
+/**
+ * @deprecated The method should not be used. Please use parseTurtle or parseJsonLd instead.
+ */
+export async function parse(
+  mapping: string,
+  inputFiles: Record<string, string>,
+  options: ParseOptions = {},
+): Promise<string | jsonld.NodeObject[]> {
+  return parseTurtle(mapping, inputFiles, options);
+}

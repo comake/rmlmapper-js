@@ -110,7 +110,7 @@ const replaceConstantShortProps = (graph) => {
 };
 
 // returns object with prefixes, data graph, and all top-level mappings
-const expandedJsonMap = async (ttl) => {
+const expandedJsonMapFromTurtle = async (ttl) => {
   const [response, prefixes] = await ttlToJson(ttl);
   const result = {};
   const regex = /@base <(.*)>/;
@@ -128,5 +128,19 @@ const expandedJsonMap = async (ttl) => {
   return result;
 };
 
+const expandedJsonMapFromJsonLd = async (jsonLdMapping) => {
+  const flattenedMapping = await jsonld.flatten(jsonLdMapping, {});
+  const result = {
+    prefixes: {},
+  };
+  const prefixFreeGraph = flattenedMapping['@graph'].map(node => prefixHelper.checkAndRemovePrefixesFromObject(node, result.prefixes));
+  replaceConstantShortProps(prefixFreeGraph);
+  const connectedGraph = jsonLDGraphToObj(prefixFreeGraph);
+  result.data = connectedGraph;
+  result.topLevelMappings = getTopLevelMappings(result.data);
+  return result;
+};
+
 module.exports.ttlToJson = ttlToJson;
-module.exports.expandedJsonMap = expandedJsonMap;
+module.exports.expandedJsonMapFromTurtle = expandedJsonMapFromTurtle;
+module.exports.expandedJsonMapFromJsonLd = expandedJsonMapFromJsonLd;

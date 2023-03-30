@@ -1,0 +1,46 @@
+{
+  "@id": "http://example.test/#Mapping",
+  "http://semweb.mmlab.be/ns/rml#logicalSource": {
+    "@id": "http://example.test/#LOGICALSOURCE",
+    "http://semweb.mmlab.be/ns/rml#source": "./test/assets/straightMapping/input.json",
+    "http://semweb.mmlab.be/ns/rml#referenceFormulation": "http://semweb.mmlab.be/ns/ql#JSONPath",
+    "http://semweb.mmlab.be/ns/rml#iterator": "$"
+  },
+  "http://www.w3.org/ns/r2rml#subjectMap": {
+    "http://www.w3.org/ns/r2rml#termType": {
+      "@id": "http://www.w3.org/ns/r2rml#BlankNode"
+    },
+    "http://www.w3.org/ns/r2rml#class": {
+      "@id": "http://schema.org/Person"
+    }
+  },
+ "http://www.w3.org/ns/r2rml#predicateObjectMap": [
+    {
+      "http://www.w3.org/ns/r2rml#predicateMap": {
+        "http://www.w3.org/ns/r2rml#constant": "http://schema.org/name"
+      },
+      "http://www.w3.org/ns/r2rml#objectMap": {
+        "http://semweb.mmlab.be/ns/rml#reference": "name"
+      }
+    },
+    {
+      "http://www.w3.org/ns/r2rml#predicate": {
+        "@id": "http://schema.org/age"
+      },
+      "http://www.w3.org/ns/r2rml#objectMap": {
+        "http://semweb.mmlab.be/ns/rml#reference": "age"
+      }
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+

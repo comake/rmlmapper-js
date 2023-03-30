@@ -23,7 +23,7 @@ yarn add @comake/rmlmapper-js
 ⚠️ **Note**: The documentation below is directly copied from the RocketRML repo. Some of it may be out of date.
 
 
-#### RML Vocabulary
+## RML Vocabulary
 the following list contains the current supported classes.
 
 
@@ -45,7 +45,7 @@ Missing:
 
 
 
-#### Querying languages
+## Querying languages
 
 The mapper supports XML, JSON and CSV as input format. For querying the data, [JSONPath](https://www.npmjs.com/package/jsonpath-plus) (json), [XPath](https://www.npmjs.com/package/xpath) (xml) and [csvjson](https://www.npmjs.com/package/csvjson) (csv) are used. Since JSON is supported natively by javascript, it has a huge speed benefit compared to XML.
 
@@ -53,53 +53,103 @@ Therefore, the mapper also contains a [C++ version](https://github.com/ThibaultG
 
 XPath 3.1 is available through [fontoxpath](https://www.npmjs.com/package/fontoxpath) and must be enabled through the option: `xpathLib: 'fontoxpath'`
 
-### How it works
+## How it works
 
-The `parse` function is the entry point of this library.
-It takes an RML `mapping` serialized as turtle, and a collection of `inputFiles` keyed on the filename they represent in the mapping. Optionally, it accepts an `options` argument.
+This library has two main entry point functions: the `parseTurtle` function and the `parseJsonLd` function. There is also a deprecated `parse` function for backwards compatibility. It is an alias for `parseTurtle`.
 
-The function returns a promise, which resolves to the resulting output.
+#### `parseTurtle`
 
-### The options parameter
-```javascript
-{
-    // compact jsonld document with provided context
-    // { http://schema.org/name:"Tom" }
-    // ->
-    // {
-    //   @context:"http://schema.org/",
-    //   name:"Tom"
-    // }
-    compress: {
-      '@vocab': "http://schema.org/"
-    },
-    // If you want n-quads instead of json as output,
-    // you need to define toRDF to true in the options parameter
-    toRDF: true,
-    // If you want to insert your all objects with their regarding @id's (to get a nesting in jsonld), "Un-flatten" jsonld
-    replace: true,
-    // You can delete namespaces to make the xpath simpler.
-    removeNameSpace: {xmlns:"https://xmlnamespace.xml"},
-    // Choose xpath evaluator library, available options: default | xpath (same as default) | pugixml (cpp xpath implementation, previously xmlPerformanceMode:true) | fontoxpath (xpath 3.1 engine)
-    xpathLib: "default",
-    // ignore input values that are empty string (or whitespace only) (only use a value from the input if value.trim() !== '') (default false)
-    ignoreEmptyStrings: true,
-    // values that are to be ignored from the input. E.g ignore all input values that are "-"
-    ignoreValues: ["-"],
-    // You can also use functions to manipulate the data while parsing. (E.g. Change a date to a ISO format, ..)
-    functions : {**See the Functions section**}
-    // Any options to parse the csv. available: delimiter - default ","
-    csv: {
-      delimiter: ";"
-    }
+**Parameters**
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `mapping` | `string` | Required | An RML Mapping serialized as a string in the [Turtle](https://www.w3.org/TR/turtle/) format. |
+| `inputFiles` | `object` | Required | A collection of files keyed on the filename they represent in the mapping.  |
+| `options` | `object` |   | A ParserOptions object (defined below). |
+
+#### `parseJsonLd`
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `mapping` | `string` | Required | An RML Mapping serialized as a JSON object in the [JSON-LD](https://json-ld.org/) format. |
+| `inputFiles` | `object` | Required | A collection of files keyed on the filename they represent in the mapping.  |
+| `options` | `object` |   | A ParserOptions object (defined below). |
+
+
+Both `parseTurtle` and `parseJsonLd` return a promise, which resolves to the resulting output.
+
+**ParserOptions**
+
+These are the available options for parsing mappings (in Typescript):
+
+```typescript
+export interface ParseOptions {
+  /**
+   * A JSON-LD context for json-ld compress
+   */
+  compress?: ContextDefinition;
+  /**
+   * Option to output triples as N-Quads instead of JSON-LD
+   */
+  toRDF?: boolean;
+  /**
+   * Replaces "\@id" references with nested elements. JSON-LD only.
+   */
+  replace?: boolean;
+  /**
+   * Remove xmlns in xml documents (for easier xPaths)
+   */
+  removeNameSpace?: Record<string, string>;
+  /**
+   * Xpath evaluator library
+   */
+  xpathLib?: 'default' | 'xpath' | 'pugixml' | 'fontoxpath';
+  /**
+   * Predefined functions which can be used in mappings
+   */
+  functions?: Record<string, (args: any | any[]) => any>;
+  /**
+   * Do not add triples for empty strings
+   */
+  ignoreEmptyStrings?: boolean;
+  /**
+   * Ignore values from the input
+   */
+  ignoreValues?: string[];
+  /**
+   * CSV options
+   */
+  csv?: {
+    delimiter?: string;
+  };
+  /**
+   * The default "\@language" to use in the output
+   */
+  language?: string;
 }
 ```
 
-#### Usage
-```javascript
-const parser = require('@comake/rmlmapper-js');
+## Usage
 
-const mapping = `
+```typescript
+import * as RmlParser from '@comake/rmlmapper-js';
+
+const inputFiles = {
+  'input.json': '{ "name": "Adler" }'
+}
+
+const options = {
+  toRDF: true,
+  replace: false,
+};
+
+const turtleMapping = `
+  @prefix rr: <http://www.w3.org/ns/r2rml#> .
+  @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
+  @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
+
   <#Mapping> rml:logicalSource [
     rml:source "input.json";
     rml:referenceFormulation ql:JSONPath;
@@ -107,24 +157,25 @@ const mapping = `
   ];
 `;
 
-const options = {
-  toRDF: true,
-  verbose: true,
-  xmlPerformanceMode: false,
-  replace: false,
-};
+const turtleMappingResult = await parser.parseTurtle(turtleMapping, inputFiles, options);
 
-const inputFiles = {
-  'input.json': '{ "name": "Adler" }'
+const jsonLdMapping = {
+  '@id': 'https://example.com/#Mapping',
+  '@type': 'http://www.w3.org/ns/r2rml#TriplesMap',
+  'http://semweb.mmlab.be/ns/rml#logicalSource': {
+    'http://semweb.mmlab.be/ns/rml#source': 'input.json',
+    'http://semweb.mmlab.be/ns/rml#referenceFormulation': 'http://semweb.mmlab.be/ns/ql#JSONPath',
+    'http://semweb.mmlab.be/ns/rml#iterator': '$'
+  }
 }
 
-const result = await parser.parse(mapping, inputFiles, options);
+const jsonLdMappingResult = await parser.parseJsonLd(jsonLdMapping, inputFiles, options);
 ```
 
 ## Example
-Below there is shown a very simple example with no nesting and no array.
+Below there is shown a very simple example with no nested data and no arrays.
 
-More can be seen in the tests folder
+Additional examples can be seen in the tests folder.
 
 #### Input
 
@@ -138,26 +189,24 @@ More can be seen in the tests folder
 
 #### Turtle mapfile
 
-The mapfile must also specify the input source path.
-
 ```ttl
-  @prefix rr: <http://www.w3.org/ns/r2rml#> .
-  @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
-  @prefix schema: <http://schema.org/> .
-  @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix rml: <http://semweb.mmlab.be/ns/rml#> .
+@prefix schema: <http://schema.org/> .
+@prefix ql: <http://semweb.mmlab.be/ns/ql#> .
 
-  <#LOGICALSOURCE>
+<#LOGICALSOURCE>
   rml:source "input.json";
   rml:referenceFormulation ql:JSONPath;
   rml:iterator "$".
 
-  <#Mapping>
+<#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
 
-   rr:subjectMap [
-      rr:termType rr:BlankNode;
-      rr:class schema:Person;
-   ];
+  rr:subjectMap [
+    rr:termType rr:BlankNode;
+    rr:class schema:Person;
+  ];
 
   rr:predicateObjectMap [
       rr:predicate schema:name;
@@ -181,9 +230,10 @@ The mapfile must also specify the input source path.
 ```
 
 ## Functions:
-This library also allows the user to define javascript functions beforehand and passes them through the options parameter. These functions can be used within an RML Mapping according to the [FNO specification](https://fno.io/rml/).
+This library also allows the user to define javascript functions beforehand and pass them through the options parameter. These functions can be used within an RML Mapping according to the [FNO specification](https://fno.io/rml/).
 
 An example how this works can be seen below:
+
 #### Input
 
 
@@ -200,21 +250,21 @@ An example how this works can be seen below:
 The mapfile must also specify the input source path.
 
 ```ttl
-  @prefix rr: <http://www.w3.org/ns/r2rml#> .
-  @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-  @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
-  @prefix schema: <http://schema.org/> .
-  @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-  @prefix fnml: <http://semweb.mmlab.be/ns/fnml#> .
-  @prefix fno: <http://w3id.org/function/ontology#> .
-  @prefix grel: <http://users.ugent.be/~bjdmeest/function/grel.ttl#> .
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rml: <http://semweb.mmlab.be/ns/rml#> .
+@prefix schema: <http://schema.org/> .
+@prefix ql: <http://semweb.mmlab.be/ns/ql#> .
+@prefix fnml: <http://semweb.mmlab.be/ns/fnml#> .
+@prefix fno: <http://w3id.org/function/ontology#> .
+@prefix grel: <http://users.ugent.be/~bjdmeest/function/grel.ttl#> .
 
-  <#LOGICALSOURCE>
+<#LOGICALSOURCE>
   rml:source "input.json";
   rml:referenceFormulation ql:JSONPath;
   rml:iterator "$".
 
-  <#Mapping>
+<#Mapping>
   rml:logicalSource <#LOGICALSOURCE>;
 
   rr:subjectMap [
@@ -232,35 +282,34 @@ The mapfile must also specify the input source path.
     rr:objectMap  <#FunctionMap>;
   ].
 
-  <#FunctionMap>
-    fnml:functionValue [
-      rml:logicalSource <#LOGICALSOURCE> ;
-      rr:predicateObjectMap [
-        rr:predicate fno:executes ;
-        rr:objectMap [ rr:constant grel:createDescription ]
-      ] ;
-      rr:predicateObjectMap [
-        rr:predicate grel:inputString ;
-        rr:objectMap [ rml:reference "name" ]
-      ];
-      rr:predicateObjectMap [
-        rr:predicate grel:inputString ;
-        rr:objectMap [ rml:reference "age" ]
-      ];
-    ] .
+<#FunctionMap>
+  fnml:functionValue [
+    rml:logicalSource <#LOGICALSOURCE> ;
+    rr:predicateObjectMap [
+      rr:predicate fno:executes ;
+      rr:objectMap [ rr:constant grel:createDescription ]
+    ] ;
+    rr:predicateObjectMap [
+      rr:predicate grel:inputString ;
+      rr:objectMap [ rml:reference "name" ]
+    ];
+    rr:predicateObjectMap [
+      rr:predicate grel:inputString ;
+      rr:objectMap [ rml:reference "age" ]
+    ];
+  ].
 
 ```
 
 where the option parameter looks like this:
-```javascript
-  let options={
-        functions: {
-            'http://users.ugent.be/~bjdmeest/function/grel.ttl#createDescription': function (data) {
-                let result=data[0]+' is '+data[1]+ ' years old.';
-                return result;
-                }
-            }
-        };
+```typescript
+  const options = {
+    functions: {
+      'http://users.ugent.be/~bjdmeest/function/grel.ttl#createDescription': (data) => {
+        return `${data[0]} is ${data[1]} years old.`;
+      }
+    }
+  };
 ```
 
 #### Output

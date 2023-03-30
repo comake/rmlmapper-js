@@ -1,3 +1,5 @@
+import type { ContextDefinition } from 'jsonld';
+
 export type OrArray<T> = T | T[];
 
 export type JSONObject = Record<string, JSONValue>;
@@ -58,31 +60,47 @@ export interface LogicalSource {
 export type Prefixes = Record<string, string>;
 
 export interface ParseOptions {
-  // Jsonld @context for json-ld compress
-  compress?: any;
-  // Output triples instead of json-ld
+  /**
+   * A JSON-LD context for json-ld compress
+   */
+  compress?: ContextDefinition;
+  /**
+   * Option to output triples as N-Quads instead of JSON-LD
+   */
   toRDF?: boolean;
-  // Jsonld only: replace @ids with elements
+  /**
+   * Replaces "\@id" references with nested elements. JSON-LD only.
+   */
   replace?: boolean;
-  // Remove xmlns in xml documents (for easier xPaths)
+  /**
+   * Remove xmlns in xml documents (for easier xPaths)
+   */
   removeNameSpace?: Record<string, string>;
-  // Xpath evaluator library
+  /**
+   * Xpath evaluator library
+   */
   xpathLib?: 'default' | 'xpath' | 'pugixml' | 'fontoxpath';
-  // Functions
+  /**
+   * Predefined functions which can be used in mappings
+   */
   functions?: Record<string, (args: any | any[]) => any>;
-  // Add no triples for empty strings
+  /**
+   * Do not add triples for empty strings
+   */
   ignoreEmptyStrings?: boolean;
-  // Ignore values from the input
+  /**
+   * Ignore values from the input
+   */
   ignoreValues?: string[];
-  // CSV options
+  /**
+   * CSV options
+   */
   csv?: {
     delimiter?: string;
   };
-  // ???
-  xmlPerformanceMode?: boolean;
-
-  inputFiles?: Record<string, string>;
-
+  /**
+   * The default "\@language" to use in the output
+   */
   language?: string;
 }
 
