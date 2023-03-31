@@ -270,7 +270,6 @@ export class MappingProcessor {
     }
     for (const parent of parents) {
       if (!obj.$parentPaths[parent]) {
-        console.log('calling get data', index, parent);
         obj.$parentPaths[parent] = this.sourceParser.getData(index, parent);
       }
     }
