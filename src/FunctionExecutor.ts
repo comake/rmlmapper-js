@@ -197,7 +197,7 @@ export class FunctionExecutor {
     index: number,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    if (parameter[RR.constant]) {
+    if (RR.constant in parameter) {
       return getConstant(parameter[RR.constant]);
     }
     if (parameter[RML.reference]) {

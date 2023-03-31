@@ -74,20 +74,22 @@ const locations = (substring, string) => {
 };
 
 const getConstant = (constant) => {
-  if (constant['@id']) {
-    return constant['@id'];
-  }
-  if (constant['@value']) {
-    if (constant['@type'] === XSD.integer) {
-      return Number.parseInt(constant['@value'], 10);
+  if (typeof constant === 'object') {
+    if ('@id' in constant) {
+      return constant['@id'];
     }
-    if (constant['@type'] === XSD.double) {
-      return Number.parseFloat(constant['@value'], 10);
+    if ('@value' in constant) {
+      if (constant['@type'] === XSD.integer) {
+        return Number.parseInt(constant['@value'], 10);
+      }
+      if (constant['@type'] === XSD.double) {
+        return Number.parseFloat(constant['@value'], 10);
+      }
+      if (constant['@type'] === XSD.boolean) {
+        return constant['@value'] === true || constant['@value'] === 'true'
+      }
+      return constant['@value']
     }
-    if (constant['@type'] === XSD.boolean) {
-      return constant['@value'] === true || constant['@value'] === 'true'
-    }
-    return constant['@value']
   }
   return constant;
 };
