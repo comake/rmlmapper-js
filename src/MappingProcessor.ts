@@ -107,7 +107,8 @@ export class MappingProcessor {
     for (const nodeObject of this.data) {
       const { [RR.joinCondition]: joinCondition, [RR.parentTriplesMap]: parentTriplesMap } = nodeObject;
       if (parentTriplesMap?.['@id'] === this.mapping['@id'] && joinCondition) {
-        const parentPaths = addArray(joinCondition).map(({ [RR.parent]: parent }): string => parent);
+        const parentPaths = addArray(joinCondition).map(({ [RR.parent]: parent }): string =>
+          getValueIfDefined(parent) as string);
         parents.push(...parentPaths);
       }
     }
@@ -269,6 +270,7 @@ export class MappingProcessor {
     }
     for (const parent of parents) {
       if (!obj.$parentPaths[parent]) {
+        console.log('calling get data', index, parent);
         obj.$parentPaths[parent] = this.sourceParser.getData(index, parent);
       }
     }
