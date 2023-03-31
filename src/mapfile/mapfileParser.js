@@ -2,7 +2,7 @@ const N3 = require('n3');
 const jsonld = require('jsonld');
 const helper = require('../input-parser/helper.js');
 const { addArray } = require('../util/ArrayUtil');
-const { RR } = require('../util/Vocabulary');
+const { RR, RML } = require('../util/Vocabulary');
 
 const quadsToJsonLD = async (nquads) => {
   let doc = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
@@ -38,14 +38,15 @@ const ttlToJson = ttl => new Promise((resolve, reject) => {
 });
 
 function hasLogicalSource(e) {
-  return Object.keys(e).find(x => x.match(/.*logicalSource/));
+  return RML.logicalSource in e;
 }
+
 function hasSubjectMap(e) {
-  return Object.keys(e).find(x => x.match(/.*subjectMap/));
+  return RR.subjectMap in e;
 }
 
 function isFunction(e) {
-  if (e[RR.predicateObjectMap]) {
+  if (RR.predicateObjectMap in e) {
     const predicateObjectMap = addArray(e[RR.predicateObjectMap]);
     for (const obj of predicateObjectMap) {
       if (obj[RR.predicate] && obj[RR.predicate]['@id'] && obj[RR.predicate]['@id'].indexOf('executes') !== -1) {
@@ -94,12 +95,11 @@ const replaceConstantShortProps = (graph) => {
   const issuer = bNodeIssuer('re');
   const newNodes = [];
   for (const i in graph) {
-    // even if we don't support graph
-    ['subject', 'predicate', 'object', 'graph', 'language'].forEach((prop) => {
+    [RR.subject, RR.predicate, RR.object, RR.graph, RR.language].forEach((prop) => {
       if (graph[i][prop]) {
         const bNodeId = issuer();
         // create new blank nodes, as to not mess with json-ld structure (will be replaced in next step - jsonLDGraphToObj)
-        newNodes.push({ '@id': bNodeId, constant: graph[i][prop] });
+        newNodes.push({ '@id': bNodeId, [RR.constant]: graph[i][prop] });
         graph[i][`${prop}Map`] = { '@id': bNodeId };
         delete graph[i][prop];
       }

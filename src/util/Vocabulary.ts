@@ -25,6 +25,7 @@ export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
   'termType',
   'template',
   'datatype',
+  'subject',
   'subjectMap',
   'predicateObjectMap',
   'predicate',
@@ -33,6 +34,7 @@ export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
   'child',
   'parent',
   'language',
+  'graph',
 ]);
 
 export const RML = createNamespace('http://semweb.mmlab.be/ns/rml#', [
