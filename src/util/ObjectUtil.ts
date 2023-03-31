@@ -1,17 +1,37 @@
-import type { NodeObject } from 'jsonld';
-import { replacePrefixWithURL } from '../helper/prefixHelper.js';
+import type { NodeObject, ValueObject } from 'jsonld';
 import helper from '../input-parser/helper.js';
 import { addArray } from './ArrayUtil';
-import type { OrArray } from './Types';
+import type { JSONArray, JSONObject, OrArray, ReferenceNodeObject } from './Types';
 import { RDF } from './Vocabulary';
 
-export function findObjectWithIdInArray(
-  objArr: any[],
+export function getValueIfDefined<T>(
+  fieldValue?: ValueObject | string | boolean | number | JSONObject | JSONArray,
+): OrArray<T> | undefined {
+  if (fieldValue && Array.isArray(fieldValue)) {
+    return fieldValue.map((valueItem): T => getValueIfDefined<T>(valueItem) as T);
+  }
+  if (fieldValue && typeof fieldValue === 'object' && '@value' in fieldValue) {
+    return fieldValue['@value'] as unknown as T;
+  }
+  if (fieldValue !== undefined && fieldValue !== null) {
+    return fieldValue as unknown as T;
+  }
+}
+
+export function getIdFromNodeObjectIfDefined(nodeObject?: ReferenceNodeObject | string): string | undefined {
+  if (nodeObject && typeof nodeObject === 'object') {
+    return nodeObject['@id'];
+  }
+  if (nodeObject) {
+    return nodeObject;
+  }
+}
+
+export function findObjectWithIdInArray<T>(
+  objArr: T[],
   id: string,
-  prefixes: Record<string, string>,
-): any | undefined {
-  return objArr.find((obj: any): boolean =>
-    replacePrefixWithURL(obj['@id'], prefixes) === replacePrefixWithURL(id, prefixes));
+): T | undefined {
+  return objArr.find((obj: any): boolean => obj['@id'] === id) as T;
 }
 
 function removeEmptyFromAllKeysOfNodeObject(nodeObject: NodeObject): NodeObject {
@@ -52,12 +72,16 @@ export function convertRdfTypeToJsonldType(obj: Record<string, any>): void {
     if (key === 'rdf:type' || key === RDF.type) {
       const temp = addArray(obj[key]);
       if (temp?.[0] && typeof temp[0] === 'object') {
-        return;
+        const types = temp.map((tempItem): string => tempItem['@id']);
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete obj[key];
+        helper.addToObj(obj, '@type', types);
+      } else {
+        const type = obj[key];
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete obj[key];
+        helper.addToObj(obj, '@type', type);
       }
-      const type = obj[key];
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete obj[key];
-      helper.addToObj(obj, '@type', type);
     } else if (obj[key] && typeof obj[key] === 'object') {
       convertRdfTypeToJsonldType(obj[key]);
     }

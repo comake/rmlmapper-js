@@ -1,7 +1,7 @@
 [
   {
     "@type": [
-      "http://schema.org/Person",
+      "https://schema.org/Person",
       "http://type.com"
     ],
     "http://mytestprefix.org/name": "Tom A.",

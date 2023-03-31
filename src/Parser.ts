@@ -5,10 +5,10 @@
 */
 import * as jsonld from 'jsonld';
 import type { NodeObject } from 'jsonld';
-import prefixhelper from './helper/prefixHelper';
-import replaceHelper from './helper/replace';
+import replaceHelper, { jsonLDGraphToObj } from './helper/replace';
 import helper from './input-parser/helper';
-import mapfile from './mapfile/mapfileParser';
+import { getTopLevelMappings, replaceConstantShortProps, ttlToJson } from './mapfile/mapfileParser';
+import type { ParsedMappingResult } from './MappingProcessor';
 import { MappingProcessor } from './MappingProcessor';
 import { addArray } from './util/ArrayUtil';
 import {
@@ -16,14 +16,11 @@ import {
   removeMetaFromAllNodes,
   removeEmptyFromAllNodes,
   convertRdfTypeToJsonldType,
+  getValueIfDefined,
+  getIdFromNodeObjectIfDefined,
 } from './util/ObjectUtil';
-import type { LogicalSource, Prefixes, ParseOptions, ProcessOptions } from './util/Types';
-
-interface Res {
-  prefixes: Record<string, string>;
-  data: jsonld.NodeObject[];
-  topLevelMappings: string[];
-}
+import type { LogicalSource, ParseOptions, ProcessOptions, ReferenceNodeObject } from './util/Types';
+import { RML, RR } from './util/Vocabulary';
 
 export class RmlMapper {
   private readonly sourceCache = {};
@@ -35,18 +32,17 @@ export class RmlMapper {
   }
 
   public async parseJsonLd(mapping: NodeObject): Promise<NodeObject[] | string> {
-    const res = await mapfile.expandedJsonMapFromJsonLd(mapping) as unknown as Res;
-    const output = await this.process(res);
-    const out = await this.clean(output);
-    if (this.options.toRDF) {
-      return await jsonld.toRDF(out, { format: 'application/n-quads' }) as unknown as string;
-    }
-    return out;
+    const flattenedMapping = await jsonld.flatten(mapping, {});
+    return await this.processAndCleanJsonLdMapping(flattenedMapping);
   }
 
   public async parseTurtle(mapping: string): Promise<NodeObject[] | string> {
-    const res = await mapfile.expandedJsonMapFromTurtle(mapping) as unknown as Res;
-    const output = await this.process(res);
+    const response = await ttlToJson(mapping);
+    return await this.processAndCleanJsonLdMapping(response);
+  }
+
+  private async processAndCleanJsonLdMapping(mapping: NodeObject): Promise<NodeObject[] | string> {
+    const output = await this.processMapping(mapping);
     const out = await this.clean(output);
     if (this.options.toRDF) {
       return await jsonld.toRDF(out, { format: 'application/n-quads' }) as unknown as string;
@@ -54,13 +50,16 @@ export class RmlMapper {
     return out;
   }
 
-  private async process(res: Res): Promise<Record<string, jsonld.NodeObject[]>> {
-    let output: Record<string, jsonld.NodeObject[]> = {};
-    for (const mappingId of res.topLevelMappings) {
-      let mapping = findObjectWithIdInArray(res.data, mappingId, res.prefixes);
-      if (mapping) {
-        mapping = prefixhelper.checkAndRemovePrefixesFromObject(mapping, res.prefixes) as NodeObject;
-        this.topLevelMappingProcessors[mappingId] = this.createProcessorForMapping(res, mapping);
+  private async processMapping(mapping: NodeObject): Promise<Record<string, jsonld.NodeObject[]>> {
+    const graph = mapping['@graph'];
+    replaceConstantShortProps(graph);
+    const connectedGraph = jsonLDGraphToObj(graph);
+    const topLevelMappings = getTopLevelMappings(connectedGraph);
+    const output: Record<string, ParsedMappingResult[]> = {};
+    for (const mappingId of topLevelMappings) {
+      const topLevelMapping = findObjectWithIdInArray(connectedGraph, mappingId);
+      if (topLevelMapping) {
+        this.topLevelMappingProcessors[mappingId] = this.createProcessorForMapping(connectedGraph, topLevelMapping);
       }
     }
 
@@ -71,57 +70,49 @@ export class RmlMapper {
         output[mappingId] = await proccessor.processMapping(this.topLevelMappingProcessors);
       }
     }
-    output = this.mergeJoin(output, res);
-    return output;
+    return this.mergeJoin(output, connectedGraph);
   }
 
   private createProcessorForMapping(
-    res: Res,
+    data: any[],
     mapping: any,
   ): MappingProcessor {
     const logicalSource = findObjectWithIdInArray(
-      res.data,
-      mapping.logicalSource['@id'],
-      res.prefixes,
-    ) as LogicalSource;
-    const referenceFormulation = this.getReferenceFormulationFromLogicalSource(logicalSource, res.prefixes);
+      data,
+      mapping[RML.logicalSource]['@id'],
+    ) as unknown as LogicalSource;
+    const referenceFormulation = this.getReferenceFormulationFromLogicalSource(logicalSource);
     const iterator = this.getIteratorFromLogicalSource(logicalSource, referenceFormulation);
+    const source = this.getSourceFromLogicalSource(logicalSource);
     return new MappingProcessor({
-      source: logicalSource.source,
+      source,
       referenceFormulation,
       options: this.options,
-      prefixes: res.prefixes,
       sourceCache: this.sourceCache,
       iterator,
       mapping,
-      data: res.data,
+      data,
     });
   }
 
-  private getReferenceFormulationFromLogicalSource(logicalSource: LogicalSource, prefixes: Prefixes): string {
-    switch (typeof logicalSource.referenceFormulation) {
-      case 'string':
-        return prefixhelper.checkAndRemovePrefixesFromString(logicalSource.referenceFormulation, prefixes);
-      case 'object':
-        if (logicalSource.referenceFormulation['@id']) {
-          return prefixhelper.checkAndRemovePrefixesFromString(logicalSource.referenceFormulation['@id'], prefixes);
-        }
-        throw new Error('referenceFormulation of logicalSource has no @id field');
-      default:
-        throw new Error('referenceFormulation of logicalSource has invalid format');
-    }
+  private getReferenceFormulationFromLogicalSource(logicalSource: LogicalSource): string {
+    return getIdFromNodeObjectIfDefined(logicalSource[RML.referenceFormulation])!;
+  }
+
+  private getSourceFromLogicalSource(logicalSource: LogicalSource): string {
+    return getValueIfDefined(logicalSource[RML.source]) as string;
   }
 
   private getIteratorFromLogicalSource(logicalSource: LogicalSource, referenceFormulation: string): string {
     if (referenceFormulation === 'CSV') {
       return '$';
     }
-    return logicalSource.iterator;
+    return getValueIfDefined(logicalSource[RML.iterator]) as string;
   }
 
   private mergeJoin(
-    output: Record<string, any[]>,
-    res: Res,
+    output: Record<string, ParsedMappingResult[]>,
+    data: any[],
   ): Record<string, any> {
     for (const key in output) {
       if (Object.prototype.hasOwnProperty.call(output, key)) {
@@ -133,13 +124,12 @@ export class RmlMapper {
           for (const predicate in parentTriplesMap) {
             if (Object.prototype.hasOwnProperty.call(parentTriplesMap, predicate)) {
               const predicateData = parentTriplesMap[predicate];
+              // eslint-disable-next-line @typescript-eslint/no-for-in-array
               for (const i in predicateData) {
                 if (Object.prototype.hasOwnProperty.call(predicateData, i)) {
                   const singleJoin = predicateData[i];
-                  const record: Record<string, any> = prefixhelper.checkAndRemovePrefixesFromObject(
-                    findObjectWithIdInArray(res.data, singleJoin.mapID, res.prefixes), res.prefixes,
-                  );
-                  const parentId = record.parentTriplesMap['@id'];
+                  const record = findObjectWithIdInArray(data, singleJoin.mapID);
+                  const parentId = (record[RR.parentTriplesMap] as ReferenceNodeObject)['@id'];
                   const toMapData = addArray(output[parentId]);
 
                   if (singleJoin.joinCondition) {
@@ -147,23 +137,24 @@ export class RmlMapper {
                     singleJoin.joinCondition.forEach(({ parentPath }: Record<string, any>): void => {
                       cache[parentPath] = {};
                       for (const tmd of toMapData) {
-                        let parentData = tmd.$parentPaths[parentPath];
-                        parentData = addArray(parentData);
-                        if (parentData.length !== 1) {
-                          console.warn(`joinConditions parent must return only one value! Parent: ${parentData}`);
-                          break;
+                        if (tmd.$parentPaths) {
+                          const parentData = tmd.$parentPaths[parentPath];
+                          const parentDataArr = addArray(parentData);
+                          if (parentDataArr.length !== 1) {
+                            console.warn(`joinConditions parent must return only one value! Parent: ${parentDataArr}`);
+                            break;
+                          }
+                          const firstParentData = parentDataArr[0];
+                          if (!cache[parentPath][firstParentData]) {
+                            cache[parentPath][firstParentData] = [];
+                          }
+                          cache[parentPath][firstParentData].push(tmd['@id']);
                         }
-                        parentData = parentData[0];
-                        if (!cache[parentPath][parentData]) {
-                          cache[parentPath][parentData] = [];
-                        }
-                        cache[parentPath][parentData].push(tmd['@id']);
                       }
                     });
 
                     for (const entry of output[key]) {
-                      const joinConditions = entry.$parentTriplesMap[predicate][i].joinCondition;
-
+                      const joinConditions = entry.$parentTriplesMap?.[predicate]?.[i]?.joinCondition ?? [];
                       const childrenMatchingCondition = joinConditions.map((cond: any): any => {
                         let childData = cond.child;
                         childData = addArray(childData);
@@ -178,8 +169,8 @@ export class RmlMapper {
 
                       const childrenMatchingAllCondition = helper.intersection(childrenMatchingCondition);
 
-                      for (const data of childrenMatchingAllCondition) {
-                        helper.addToObjInId(entry, predicate, data);
+                      for (const child of childrenMatchingAllCondition) {
+                        helper.addToObjInId(entry, predicate, child);
                       }
                     }
                   } else {

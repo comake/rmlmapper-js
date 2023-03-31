@@ -3,7 +3,7 @@ require('colors');
 const testFolder = './test/assets/RMLio-testCases';
 const fs = require('fs');
 const jsdiff = require('diff');
-const parser = require('../../src/index.js');
+const parser = require('../../../dist/index.js');
 
 const createOutputs = () => {
   fs.readdirSync(testFolder).forEach(async (file) => {

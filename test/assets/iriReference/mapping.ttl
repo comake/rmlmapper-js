@@ -33,5 +33,5 @@ rr:predicateObjectMap [
 
 rr:predicateObjectMap [
     rr:predicate schema:template;
-    rr:objectMap [ rml:template "https://example.com/{name}"; rr:termType rr:IRI ];
+    rr:objectMap [ rr:template "https://example.com/{name}"; rr:termType rr:IRI ];
 ].

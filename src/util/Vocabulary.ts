@@ -1,9 +1,15 @@
-function createNamespace<T extends string>(baseUri: string, localNames: T[]): Record<T, string> {
-  const namespace: Record<T, string> = {} as Record<T, string>;
-  for (const localName of localNames) {
-    namespace[localName] = `${baseUri}${localName}`;
-  }
-  return namespace;
+type Namespace<T extends string, TBase extends string> = {
+  [key in T]: `${TBase}${key}`
+};
+
+function createNamespace<T extends string, TBase extends string>(
+  baseUri: TBase,
+  localNames: T[],
+): Namespace<T, TBase> {
+  return localNames.reduce((obj: Namespace<T, TBase>, localName): Namespace<T, TBase> => (
+    { ...obj, [localName]: `${baseUri}${localName}` }
+  // eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
+  ), {} as Namespace<T, TBase>);
 }
 
 export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
@@ -14,10 +20,28 @@ export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
   'parentTriplesMap',
   'object',
   'objectMap',
+  'parentTriplesMap',
+  'class',
+  'termType',
+  'template',
+  'datatype',
+  'subjectMap',
+  'predicateObjectMap',
+  'predicate',
+  'predicateMap',
+  'joinCondition',
+  'child',
+  'parent',
+  'language',
 ]);
 
 export const RML = createNamespace('http://semweb.mmlab.be/ns/rml#', [
   'reference',
+  'logicalSource',
+  'source',
+  'referenceFormulation',
+  'iterator',
+  'languageMap',
 ]);
 
 export const FNO = createNamespace('http://w3id.org/function/ontology#', [
@@ -120,4 +144,10 @@ export const IDLAB = createNamespace('http://example.com/idlab/function/', [
   'delimiter',
   'listContainsElement',
   'list',
+]);
+
+export const QL = createNamespace('http://semweb.mmlab.be/ns/ql#', [
+  'JSONPath',
+  'XPath',
+  'CSV',
 ]);

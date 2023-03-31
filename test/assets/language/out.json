@@ -1,8 +1,8 @@
 [
   {
     "@id": "http://example.com/John",
-    "http://schema.org/name": "John",
-    "http://schema.org/language": [
+    "https://schema.org/name": "John",
+    "https://schema.org/language": [
       {
         "@value": "John",
         "@language": "en"
@@ -16,12 +16,12 @@
         "@language": "de-DE"
       }
     ],
-    "@type": "http://schema.org/Person"
+    "@type": "https://schema.org/Person"
   },
   {
     "@id": "http://example.com/Jane",
-    "http://schema.org/name": "Jane",
-    "http://schema.org/language": [
+    "https://schema.org/name": "Jane",
+    "https://schema.org/language": [
       {
         "@value": "Jane",
         "@language": "en"
@@ -35,6 +35,6 @@
         "@language": "de-DE"
       }
     ],
-    "@type": "http://schema.org/Person"
+    "@type": "https://schema.org/Person"
   }
 ]

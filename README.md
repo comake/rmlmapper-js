@@ -194,7 +194,7 @@ Additional examples can be seen in the tests folder.
 ```ttl
 @prefix rr: <http://www.w3.org/ns/r2rml#> .
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
-@prefix schema: <http://schema.org/> .
+@prefix schema: <https://schema.org/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
 
 <#LOGICALSOURCE>
@@ -225,9 +225,9 @@ Additional examples can be seen in the tests folder.
 #### Output
 ```json
 [{
-  "@type": "http://schema.org/Person",
-  "http://schema.org/name": "Tom A.",
-  "http://schema.org/age": 15
+  "@type": "https://schema.org/Person",
+  "https://schema.org/name": "Tom A.",
+  "https://schema.org/age": 15
 }]
 ```
 
@@ -255,7 +255,7 @@ The mapfile must also specify the input source path.
 @prefix rr: <http://www.w3.org/ns/r2rml#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
-@prefix schema: <http://schema.org/> .
+@prefix schema: <https://schema.org/> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
 @prefix fnml: <http://semweb.mmlab.be/ns/fnml#> .
 @prefix fno: <http://w3id.org/function/ontology#> .
@@ -318,9 +318,9 @@ where the option parameter looks like this:
 ```json
 
 [{
-  "@type": "http://schema.org/Person",
-  "http://schema.org/name": "Tom A.",
-  "http://schema.org/description": "Tom A. is 15 years old."
+  "@type": "https://schema.org/Person",
+  "https://schema.org/name": "Tom A.",
+  "https://schema.org/description": "Tom A. is 15 years old."
 }]
 ```
 

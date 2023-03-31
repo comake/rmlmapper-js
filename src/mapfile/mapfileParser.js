@@ -1,9 +1,8 @@
 const N3 = require('n3');
 const jsonld = require('jsonld');
 const helper = require('../input-parser/helper.js');
-const prefixHelper = require('../helper/prefixHelper.js');
-const { jsonLDGraphToObj } = require('../helper/replace.js');
 const { addArray } = require('../util/ArrayUtil');
+const { RR } = require('../util/Vocabulary');
 
 const quadsToJsonLD = async (nquads) => {
   let doc = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
@@ -16,7 +15,7 @@ const ttlToJson = ttl => new Promise((resolve, reject) => {
   const writer = new N3.Writer({ format: 'N-Triples' });
   ttl = helper.escapeChar(ttl);
   parser.parse(ttl,
-    (error, quad, prefixes) => {
+    (error, quad) => {
       if (error) {
         reject(error);
       } else if (quad) {
@@ -29,7 +28,7 @@ const ttlToJson = ttl => new Promise((resolve, reject) => {
           }
           try {
             const json = await quadsToJsonLD(result);
-            resolve([json, prefixes]);
+            resolve(json);
           } catch (e) {
             reject(e);
           }
@@ -46,15 +45,15 @@ function hasSubjectMap(e) {
 }
 
 function isFunction(e) {
-  if (e.predicateObjectMap) {
-    const predicateObjectMap = addArray(e.predicateObjectMap);
+  if (e[RR.predicateObjectMap]) {
+    const predicateObjectMap = addArray(e[RR.predicateObjectMap]);
     for (const obj of predicateObjectMap) {
-      if (obj.predicate && obj.predicate['@id'] && obj.predicate['@id'].indexOf('executes') !== -1) {
+      if (obj[RR.predicate] && obj[RR.predicate]['@id'] && obj[RR.predicate]['@id'].indexOf('executes') !== -1) {
         return true;
       }
-      if (obj.predicateMap && obj.predicateMap && obj.predicateMap['@id']) {
-        const predMap = obj.predicateMap;
-        if (predMap && predMap.constant && predMap.constant['@id'] && predMap.constant['@id'].indexOf('executes') !== -1) {
+      if (obj[RR.predicateMap] && obj[RR.predicateMap] && obj[RR.predicateMap]['@id']) {
+        const predMap = obj[RR.predicateMap];
+        if (predMap && predMap[RR.constant] && predMap[RR.constant]['@id'] && predMap[RR.constant]['@id'].indexOf('executes') !== -1) {
           return true;
         }
       }
@@ -109,38 +108,6 @@ const replaceConstantShortProps = (graph) => {
   graph.push(...newNodes);
 };
 
-// returns object with prefixes, data graph, and all top-level mappings
-const expandedJsonMapFromTurtle = async (ttl) => {
-  const [response, prefixes] = await ttlToJson(ttl);
-  const result = {};
-  const regex = /@base <(.*)>/;
-  let base = '_:';
-  if (ttl.match(regex) && ttl.match(regex)[1]) {
-    base = ttl.match(regex)[1];
-  }
-  result.prefixes = prefixes || {};
-  result.prefixes.base = base;
-  const prefixFreeGraph = response['@graph'].map(node => prefixHelper.checkAndRemovePrefixesFromObject(node, result.prefixes));
-  replaceConstantShortProps(prefixFreeGraph);
-  const connectedGraph = jsonLDGraphToObj(prefixFreeGraph);
-  result.data = connectedGraph;
-  result.topLevelMappings = getTopLevelMappings(result.data);
-  return result;
-};
-
-const expandedJsonMapFromJsonLd = async (jsonLdMapping) => {
-  const flattenedMapping = await jsonld.flatten(jsonLdMapping, {});
-  const result = {
-    prefixes: {},
-  };
-  const prefixFreeGraph = flattenedMapping['@graph'].map(node => prefixHelper.checkAndRemovePrefixesFromObject(node, result.prefixes));
-  replaceConstantShortProps(prefixFreeGraph);
-  const connectedGraph = jsonLDGraphToObj(prefixFreeGraph);
-  result.data = connectedGraph;
-  result.topLevelMappings = getTopLevelMappings(result.data);
-  return result;
-};
-
+module.exports.getTopLevelMappings = getTopLevelMappings;
+module.exports.replaceConstantShortProps = replaceConstantShortProps;
 module.exports.ttlToJson = ttlToJson;
-module.exports.expandedJsonMapFromTurtle = expandedJsonMapFromTurtle;
-module.exports.expandedJsonMapFromJsonLd = expandedJsonMapFromJsonLd;

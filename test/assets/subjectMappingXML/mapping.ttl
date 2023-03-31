@@ -20,7 +20,7 @@ rml:logicalSource <#LOGICALSOURCE>;
 
 
  rr:subjectMap [
-      rr:template "prefix:{name}"; #the id of the object
+      rr:template "http://mytestprefix.org/{name}";
       rr:class prefix:Person;
  ];
 

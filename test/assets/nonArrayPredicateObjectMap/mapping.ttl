@@ -23,7 +23,7 @@ rml:iterator "$".
   ];
 
 rr:predicateObjectMap [
-    rr:predicate "http://example.com/uuid" ;
+    rr:predicate <http://example.com/uuid> ;
     rr:objectMap  <#FunctionMap> ;
 ];
 

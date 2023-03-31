@@ -11,13 +11,13 @@
       "@id": "http://www.w3.org/ns/r2rml#BlankNode"
     },
     "http://www.w3.org/ns/r2rml#class": {
-      "@id": "http://schema.org/Person"
+      "@id": "https://schema.org/Person"
     }
   },
  "http://www.w3.org/ns/r2rml#predicateObjectMap": [
     {
       "http://www.w3.org/ns/r2rml#predicateMap": {
-        "http://www.w3.org/ns/r2rml#constant": "http://schema.org/name"
+        "http://www.w3.org/ns/r2rml#constant": "https://schema.org/name"
       },
       "http://www.w3.org/ns/r2rml#objectMap": {
         "http://semweb.mmlab.be/ns/rml#reference": "name"
@@ -25,7 +25,7 @@
     },
     {
       "http://www.w3.org/ns/r2rml#predicate": {
-        "@id": "http://schema.org/age"
+        "@id": "https://schema.org/age"
       },
       "http://www.w3.org/ns/r2rml#objectMap": {
         "http://semweb.mmlab.be/ns/rml#reference": "age"

@@ -8,7 +8,7 @@
 @prefix fno: <http://w3id.org/function/ontology#> .
 @prefix grel: <http://users.ugent.be/~bjdmeest/function/grel.ttl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix schema: <http://schema.org/> .
+@prefix schema: <https://schema.org/> .
 
 
 <#LOGICALSOURCE>

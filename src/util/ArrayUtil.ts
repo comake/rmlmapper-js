@@ -13,3 +13,13 @@ export function addArray<T>(arr: OrArray<T>): T[] {
   }
   return arr;
 }
+
+export function cutArray<T>(arr: OrArray<T>): OrArray<T> {
+  if (!Array.isArray(arr)) {
+    return arr;
+  }
+  if (arr.length === 1) {
+    arr = arr[0];
+  }
+  return arr;
+}

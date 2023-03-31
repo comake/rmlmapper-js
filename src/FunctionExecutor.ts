@@ -1,45 +1,39 @@
-import { replacePrefixWithURL } from './helper/prefixHelper';
+/* eslint-disable @typescript-eslint/naming-convention */
+import type { ValueObject } from 'jsonld';
 import { addToObj, getConstant } from './input-parser/helper';
 import type { SourceParser } from './input-parser/SourceParser';
 import type { MappingProcessor } from './MappingProcessor';
 import { predefinedFunctions } from './PredefinedFunctions';
 import { returnFirstItemInArrayOrValue, addArray } from './util/ArrayUtil';
+import { getIdFromNodeObjectIfDefined, getValueIfDefined } from './util/ObjectUtil';
 import type {
+  FnoFunctionParameter,
+  FunctionValue,
   ObjectMap,
   OrArray,
   PredicateMap,
   PredicateObjectMap,
-  Prefixes,
   ReferenceNodeObject,
   TriplesMap,
 } from './util/Types';
-import { FNO, FNO_HTTPS } from './util/Vocabulary';
+import { FNML, FNO, FNO_HTTPS, RML, RR } from './util/Vocabulary';
 
 type FnoFunction = (parameters: any) => Promise<any> | any;
-
-interface FunctionValue {
-  predicateObjectMap: OrArray<PredicateObjectMap>;
-}
-
-type FnoFunctionParameter = ObjectMap & { predicate: string };
 
 const templateRegex = /(?:\{(.*?)\})/ug;
 
 interface FunctionExecutorArgs {
   parser: SourceParser;
-  prefixes: Prefixes;
   functions?: Record<string, FnoFunction>;
 }
 
 export class FunctionExecutor {
   private readonly parser: SourceParser;
-  private readonly prefixes: Prefixes;
   private readonly functions?: Record<string, FnoFunction>;
 
   public constructor(args: FunctionExecutorArgs) {
     this.functions = args.functions;
     this.parser = args.parser;
-    this.prefixes = args.prefixes;
   }
 
   public async executeFunctionFromValue(
@@ -47,8 +41,8 @@ export class FunctionExecutor {
     index: number,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    const functionName = this.getFunctionName(functionValue.predicateObjectMap);
-    const parameters = this.getFunctionParameters(functionValue.predicateObjectMap);
+    const functionName = this.getFunctionName(functionValue[RR.predicateObjectMap]);
+    const parameters = this.getFunctionParameters(functionValue[RR.predicateObjectMap]);
     const params = await this.calculateFunctionParams(parameters, index, topLevelMappingProcessors);
     return await this.executeFunction(functionName, params);
   }
@@ -68,7 +62,7 @@ export class FunctionExecutor {
   }
 
   private getPredicateValueFromPredicateObjectMap(mapping: PredicateObjectMap): OrArray<string> {
-    const { predicate, predicateMap } = mapping;
+    const { [RR.predicate]: predicate, [RR.predicateMap]: predicateMap } = mapping;
     if (predicate) {
       return this.getPredicateValue(predicate);
     }
@@ -80,18 +74,17 @@ export class FunctionExecutor {
 
   private getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<string> {
     if (Array.isArray(predicate)) {
-      return predicate.map((predicateItem: ReferenceNodeObject): string =>
-        replacePrefixWithURL(predicateItem['@id'], this.prefixes));
+      return predicate.map((predicateItem: ReferenceNodeObject): string => predicateItem['@id']);
     }
-    return replacePrefixWithURL(predicate['@id'], this.prefixes);
+    return predicate['@id'];
   }
 
   private getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
     // TODO [>=1.0.0]: add support for reference and template here
     if (Array.isArray(predicateMap)) {
-      return predicateMap.map((predicateMapItem): string => getConstant(predicateMapItem.constant, this.prefixes));
+      return predicateMap.map((predicateMapItem): string => getConstant(predicateMapItem[RR.constant]));
     }
-    return getConstant(predicateMap.constant, this.prefixes);
+    return getConstant(predicateMap[RR.constant]);
   }
 
   private predicateContainsFnoExecutes(predicate: OrArray<string>): boolean {
@@ -102,7 +95,7 @@ export class FunctionExecutor {
   }
 
   private getFunctionNameFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): string | undefined {
-    const { objectMap, object } = predicateObjectMap;
+    const { [RR.objectMap]: objectMap, [RR.object]: object } = predicateObjectMap;
     if (object) {
       return this.getFunctionNameFromObject(object);
     }
@@ -115,11 +108,11 @@ export class FunctionExecutor {
   private getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>): string {
     if (Array.isArray(object)) {
       if (object.length === 1) {
-        return this.getFunctionNameFromConstant(object[0]);
+        return getConstant(object[0]);
       }
       throw new Error('Only one function may be specified per PredicateObjectMap');
     }
-    return this.getFunctionNameFromConstant(object);
+    return getConstant(object);
   }
 
   private getFunctionNameFromObjectMap(objectMap: OrArray<ObjectMap>): string {
@@ -127,18 +120,13 @@ export class FunctionExecutor {
     if (isArray && objectMap.length > 1) {
       throw new Error('Only one function may be specified per PredicateObjectMap');
     }
-    if (isArray && objectMap[0].constant) {
-      return this.getFunctionNameFromConstant(objectMap[0].constant);
+    if (isArray && objectMap[0][RR.constant]) {
+      return getConstant(objectMap[0][RR.constant]!);
     }
-    if (!isArray && objectMap.constant) {
-      return this.getFunctionNameFromConstant(objectMap.constant);
+    if (!isArray && objectMap[RR.constant]) {
+      return getConstant(objectMap[RR.constant]!);
     }
     throw new Error('Object must be specified through constant');
-  }
-
-  private getFunctionNameFromConstant(constant: ReferenceNodeObject | string): string {
-    const functionId = getConstant(constant, this.prefixes);
-    return replacePrefixWithURL(functionId, this.prefixes);
   }
 
   private getFunctionParameters(predicateObjectMapField: OrArray<PredicateObjectMap>): FnoFunctionParameter[] {
@@ -163,7 +151,7 @@ export class FunctionExecutor {
   private getParametersFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): FnoFunctionParameter[] {
     const predicate = this.getPredicateValueFromPredicateObjectMap(predicateObjectMap) as string;
     if (!this.isFnoExecutesPredicate(predicate)) {
-      const { objectMap } = predicateObjectMap;
+      const { [RR.objectMap]: objectMap } = predicateObjectMap;
       // TODO [>=1.0.0]: add support for object here?
       if (objectMap) {
         return this.getParametersFromObjectMap(objectMap, predicate);
@@ -178,9 +166,13 @@ export class FunctionExecutor {
 
   private getParametersFromObjectMap(objectMap: OrArray<ObjectMap>, predicate: string): FnoFunctionParameter[] {
     if (Array.isArray(objectMap)) {
-      return objectMap.map((objectMapItem: ObjectMap): FnoFunctionParameter => ({ predicate, ...objectMapItem }));
+      return objectMap.map((objectMapItem: ObjectMap): FnoFunctionParameter =>
+        ({ [RR.predicate]: { '@id': predicate }, ...objectMapItem }));
     }
-    return [{ predicate, ...objectMap }];
+    return [{
+      [RR.predicate]: { '@id': predicate },
+      ...objectMap,
+    }];
   }
 
   private async calculateFunctionParams(
@@ -193,7 +185,7 @@ export class FunctionExecutor {
       parameters.map(async(parameter): Promise<void> => {
         // Adds parameters both by their predicates and as array values
         const value = await this.getParameterValue(parameter, index, topLevelMappingProcessors);
-        addToObj(result, parameter.predicate, value);
+        addToObj(result, parameter[RR.predicate]['@id'], value);
         result.push(value);
       }),
     );
@@ -205,30 +197,38 @@ export class FunctionExecutor {
     index: number,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    if (parameter.constant) {
-      return getConstant(parameter.constant, this.prefixes);
+    if (parameter[RR.constant]) {
+      return getConstant(parameter[RR.constant]);
     }
-    if (parameter.reference) {
-      return this.getValueOfReference(parameter.reference, index, parameter.datatype);
+    if (parameter[RML.reference]) {
+      return this.getValueOfReference(parameter[RML.reference]!, index, parameter[RR.datatype]);
     }
-    if (parameter.template) {
-      return this.resolveTemplate(parameter.template, index);
+    if (parameter[RR.template]) {
+      return this.resolveTemplate(parameter[RR.template]!, index);
     }
-    if (parameter.functionValue) {
-      return await this.resolveFunctionValue(parameter.functionValue, index, topLevelMappingProcessors);
+    if (parameter[FNML.functionValue]) {
+      return await this.resolveFunctionValue(parameter[FNML.functionValue]!, index, topLevelMappingProcessors);
     }
-    if (parameter.parentTriplesMap) {
-      return await this.resolveTriplesMap(parameter.parentTriplesMap, topLevelMappingProcessors);
+    if (parameter[RR.parentTriplesMap]) {
+      return await this.resolveTriplesMap(parameter[RR.parentTriplesMap]!, topLevelMappingProcessors);
     }
   }
 
-  private getValueOfReference(reference: string, index: number, datatype?: string): OrArray<any> {
-    const data = this.parser.getData(index, reference, datatype);
+  private getValueOfReference(
+    reference: string | ValueObject,
+    index: number,
+    datatype?: string | ReferenceNodeObject,
+  ): OrArray<any> {
+    const data = this.parser.getData(
+      index,
+      getValueIfDefined(reference) as string,
+      getIdFromNodeObjectIfDefined(datatype),
+    );
     return returnFirstItemInArrayOrValue(data);
   }
 
-  private resolveTemplate(template: string, index: number): string {
-    let resolvedTemplate = template;
+  private resolveTemplate(template: string | ValueObject, index: number): string {
+    let resolvedTemplate = getValueIfDefined(template) as string;
     let match = templateRegex.exec(resolvedTemplate);
     while (match) {
       const variableValue = this.parser.getData(index, match[1]);
@@ -268,6 +268,9 @@ export class FunctionExecutor {
     if (this.functions && functionName in this.functions) {
       return await this.functions[functionName](parameters);
     }
-    return predefinedFunctions[functionName](parameters);
+    if (functionName in predefinedFunctions) {
+      return predefinedFunctions[functionName as keyof typeof predefinedFunctions](parameters);
+    }
+    throw new Error(`Could not find function ${functionName}`);
   }
 }

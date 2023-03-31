@@ -1,12 +1,12 @@
 [
   {
-    "@type": "http://schema.org/Person",
-    "http://schema.org/age": "15",
+    "@type": "https://schema.org/Person",
+    "https://schema.org/age": "15",
     "@id": "_:http%3A%2F%2Fexample.test%2F%23AGEmapping_1"
   },
   {
-    "@type": "http://schema.org/Person",
-    "http://schema.org/age": "Tom A.",
+    "@type": "https://schema.org/Person",
+    "https://schema.org/age": "Tom A.",
     "@id": "_:http%3A%2F%2Fexample.test%2F%23NAMEmapping_1"
   }
 ]

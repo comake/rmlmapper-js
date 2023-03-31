@@ -1,7 +1,7 @@
 @prefix rr: <http://www.w3.org/ns/r2rml#>.
 @prefix rml: <http://semweb.mmlab.be/ns/rml#>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-@prefix schema: <http://schema.org/>.
+@prefix schema: <https://schema.org/>.
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
 @prefix fnml: <http://semweb.mmlab.be/ns/fnml#>.
@@ -28,7 +28,7 @@ mex:pom_000 rr:predicateMap mex:pm_000.
 mex:pm_000 rr:constant rdf:type.
 mex:pom_000 rr:objectMap mex:om_000.
 mex:om_000 a rr:ObjectMap;
-    rr:constant "http://schema.org/Person";
+    rr:constant "https://schema.org/Person";
     rr:termType rr:IRI.
 mex:pom_001 a rr:PredicateObjectMap.
 mex:map_person_000 rr:predicateObjectMap mex:pom_001.

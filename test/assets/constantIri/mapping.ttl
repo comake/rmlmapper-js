@@ -29,7 +29,7 @@ rr:predicateObjectMap [
 rr:predicateObjectMap [
     rr:predicate prefix:url;
     rr:objectMap [
-     rml:constant "http://ex.com";
+     rr:constant "http://ex.com";
      rr:termType rr:IRI;
     ];
 ] ;
@@ -37,7 +37,7 @@ rr:predicateObjectMap [
 rr:predicateObjectMap [
     rr:predicate rdf:type;
     rr:objectMap [
-     rml:constant "http://type.com";
+     rr:constant "http://type.com";
      rr:termType rr:IRI;
     ];
 ] .

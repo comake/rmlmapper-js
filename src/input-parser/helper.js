@@ -1,7 +1,5 @@
 const { addArray } = require('../util/ArrayUtil');
-const dom = require('@xmldom/xmldom').DOMParser;
-const prefixHelper = require('../helper/prefixHelper.js');
-const { RDF, XSD } = require('../util/Vocabulary');
+const { RDF, XSD, RR } = require('../util/Vocabulary');
 
 const cleanString = (path) => {
   if (path.startsWith('.') || path.startsWith('/')) {
@@ -75,9 +73,9 @@ const locations = (substring, string) => {
   return a;
 };
 
-const getConstant = (constant, prefixes) => {
+const getConstant = (constant) => {
   if (constant['@id']) {
-    return prefixHelper.replacePrefixWithURL(constant['@id'], prefixes);
+    return constant['@id'];
   }
   if (constant['@value']) {
     if (constant['@type'] === XSD.integer) {
@@ -92,13 +90,6 @@ const getConstant = (constant, prefixes) => {
     return constant['@value']
   }
   return constant;
-};
-
-const cutArray = (arr) => {
-  if (arr.length === 1) {
-    arr = arr[0];
-  }
-  return arr;
 };
 
 const addToObj = (obj, pred, data) => {
@@ -171,28 +162,28 @@ const toURIComponent = (str) => {
   return str;
 };
 
-const getPredicate = (mapping, prefixes) => {
+const getPredicate = (mapping) => {
   let predicate;
-  if (mapping.predicate) {
-    if (Array.isArray(mapping.predicate)) {
+  if (mapping[RR.predicate]) {
+    if (Array.isArray(mapping[RR.predicate])) {
       predicate = [];
-      mapping.predicate.forEach((pre) => {
-        predicate.push(prefixHelper.replacePrefixWithURL(pre['@id'], prefixes));
+      mapping[RR.predicate].forEach((pre) => {
+        predicate.push(pre['@id']);
       });
     } else {
-      predicate = prefixHelper.replacePrefixWithURL(mapping.predicate['@id'], prefixes);
+      predicate = mapping[RR.predicate]['@id'];
     }
-  } else if (mapping.predicateMap) {
+  } else if (mapping[RR.predicateMap]) {
     // in predicateMap only constant allowed
-    if (Array.isArray(mapping.predicateMap)) {
+    if (Array.isArray(mapping[RR.predicateMap])) {
       predicate = [];
-      for (let temp of mapping.predicateMap) {
-        temp = temp.constant['@id'];
+      for (let temp of mapping[RR.predicateMap]) {
+        temp = getConstant(temp[RR.constant]);
         predicate.push(temp);
       }
     } else {
-      predicate = mapping.predicateMap;
-      predicate = getConstant(predicate.constant, prefixes);
+      predicate = mapping[RR.predicateMap];
+      predicate = getConstant(predicate[RR.constant]);
     }
   } else {
     throw new Error('Error: no predicate specified!');
@@ -208,7 +199,6 @@ module.exports.toURIComponent = toURIComponent;
 module.exports.replaceEscapedChar = replaceEscapedChar;
 module.exports.cleanString = cleanString;
 module.exports.locations = locations;
-module.exports.cutArray = cutArray;
 module.exports.addToObj = addToObj;
 module.exports.addToObjInId = addToObjInId;
 module.exports.isURL = isURL;

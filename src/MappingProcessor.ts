@@ -1,7 +1,8 @@
+/* eslint-disable unicorn/expiring-todo-comments */
 /* eslint-disable @typescript-eslint/naming-convention */
+import type { NodeObject } from 'jsonld';
 import tags from 'language-tags';
 import { FunctionExecutor } from './FunctionExecutor';
-import prefixhelper from './helper/prefixHelper';
 import { CsvParser } from './input-parser/CsvParser';
 import { FontoxpathParser } from './input-parser/FontoxpathParser';
 import helper from './input-parser/helper';
@@ -12,37 +13,53 @@ import { CsvSourceReader } from './source-reader/CsvSourceReader';
 import { FontoxpathSourceReader } from './source-reader/FontoxpathSourceReader';
 import { JsonSourceReader } from './source-reader/JsonSourceReader';
 import { XmlSourceReader } from './source-reader/XmlSourceReader';
-import { addArray } from './util/ArrayUtil';
-import type { ProcessOptions, Prefixes, ReferenceNodeObject, TermMap } from './util/Types';
-import { RDF, RR } from './util/Vocabulary';
+import { addArray, cutArray } from './util/ArrayUtil';
+import { getIdFromNodeObjectIfDefined, getValueIfDefined } from './util/ObjectUtil';
+import type {
+  FunctionValuedClass,
+  ObjectMap,
+  PredicateObjectMap,
+  ProcessOptions,
+  ReferenceNodeObject,
+  TermMap,
+  TriplesMap,
+} from './util/Types';
+import { FNML, QL, RDF, RML, RR } from './util/Vocabulary';
+
+export interface ParsedParentTriplesMap {
+  mapID: string;
+  joinCondition: { parentPath: string; child: any[] }[];
+}
+
+export type ParsedMappingResult = (NodeObject & {
+  $parentPaths?: Record<string, string[]>;
+  $parentTriplesMap?: Record<string, ParsedParentTriplesMap[]>;
+});
 
 export interface MappingProcessorArgs {
   referenceFormulation: string;
   options: ProcessOptions;
   sourceCache: Record<string, any>;
-  prefixes: Prefixes;
   iterator: string;
   source: string;
-  mapping: any;
+  mapping: TriplesMap;
   data: any[];
 }
 
 export class MappingProcessor {
-  private readonly prefixes: Prefixes;
   private readonly sourceParser: SourceParser;
   private readonly functionExecutor: FunctionExecutor;
-  private readonly mapping: any;
+  private readonly mapping: TriplesMap;
   private readonly data: any[];
   private count = 0;
   private processed = false;
   private returnValue: any;
 
   public constructor(args: MappingProcessorArgs) {
-    this.prefixes = args.prefixes;
     this.mapping = args.mapping;
     this.data = args.data;
     switch (args.referenceFormulation) {
-      case 'XPath': {
+      case QL.XPath: {
         if (args.options.xpathLib === 'fontoxpath') {
           const reader = new FontoxpathSourceReader(args.sourceCache, args.options);
           const source = reader.readSourceWithCache(args.source);
@@ -53,12 +70,12 @@ export class MappingProcessor {
           this.sourceParser = new XmlParser({ source, iterator: args.iterator, options: args.options });
         }
         break;
-      } case 'JSONPath': {
+      } case QL.JSONPath: {
         const reader = new JsonSourceReader(args.sourceCache, args.options);
         const source = reader.readSourceWithCache(args.source);
         this.sourceParser = new JsonParser({ source, iterator: args.iterator, options: args.options });
         break;
-      } case 'CSV': {
+      } case QL.CSV: {
         const reader = new CsvSourceReader(args.sourceCache, args.options);
         const source = reader.readSourceWithCache(args.source);
         this.sourceParser = new CsvParser({ source, iterator: args.iterator, options: args.options });
@@ -70,7 +87,6 @@ export class MappingProcessor {
     this.functionExecutor = new FunctionExecutor({
       parser: this.sourceParser,
       functions: args.options.functions,
-      prefixes: args.prefixes,
     });
   }
 
@@ -82,14 +98,16 @@ export class MappingProcessor {
     return this.returnValue;
   }
 
-  public async processMapping(topLevelMappingProcessors: Record<string, MappingProcessor>): Promise<any[]> {
-    const { subjectMap } = this.mapping;
+  public async processMapping(
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<ParsedMappingResult[]> {
+    const { [RR.subjectMap]: subjectMap } = this.mapping;
     const iteratorNumber = this.sourceParser.getCount();
     const parents = [];
     for (const nodeObject of this.data) {
-      const { joinCondition, parentTriplesMap } = nodeObject;
+      const { [RR.joinCondition]: joinCondition, [RR.parentTriplesMap]: parentTriplesMap } = nodeObject;
       if (parentTriplesMap?.['@id'] === this.mapping['@id'] && joinCondition) {
-        const parentPaths = addArray(joinCondition).map(({ parent }): string => parent);
+        const parentPaths = addArray(joinCondition).map(({ [RR.parent]: parent }): string => parent);
         parents.push(...parentPaths);
       }
     }
@@ -99,20 +117,17 @@ export class MappingProcessor {
     }
 
     let type;
-    if (subjectMap.class) {
-      if (Array.isArray(subjectMap.class)) {
-        type = [];
-        subjectMap.class.forEach((sm: ReferenceNodeObject): void => {
-          type.push(prefixhelper.replacePrefixWithURL(sm['@id'], this.prefixes));
-        });
+    if (subjectMap[RR.class]) {
+      if (Array.isArray(subjectMap[RR.class])) {
+        type = (subjectMap[RR.class] as ReferenceNodeObject[]).map((sm: ReferenceNodeObject): string => sm['@id']);
       } else {
-        type = prefixhelper.replacePrefixWithURL(subjectMap.class['@id'], this.prefixes);
+        type = (subjectMap[RR.class] as ReferenceNodeObject)['@id'];
       }
     }
-    const subjectFunctionValue = subjectMap.class?.functionValue;
+    const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
 
-    let result = [];
-    if (subjectMap.reference) {
+    const result = [];
+    if (RML.reference in subjectMap) {
       for (let i = 0; i < iteratorNumber; i++) {
         if (subjectFunctionValue) {
           type = await this.functionExecutor.executeFunctionFromValue(
@@ -121,17 +136,16 @@ export class MappingProcessor {
             topLevelMappingProcessors,
           );
         }
-        let obj: Record<string, any> = {};
+        let obj: ParsedMappingResult = {};
         this.count += 1;
-        let nodes = this.sourceParser.getData(i, subjectMap.reference);
+        let nodes = this.sourceParser.getData(i, getValueIfDefined(subjectMap[RML.reference]) as string);
         nodes = addArray(nodes);
         // Needs to be done in sequence, since result.push() is done.
         // for await ()  is bad practice when we use it with something other than an asynchronous iterator - https://stackoverflow.com/questions/59694309/for-await-of-vs-promise-all
-        for (let temp of nodes) {
+        for (const temp of nodes) {
           if (type) {
             obj['@type'] = type;
           }
-          temp = helper.isURL(temp) ? temp : helper.addBase(temp, this.prefixes);
           if (!temp.includes(' ')) {
             obj['@id'] = temp;
             obj = await this.doObjectMappings(i, obj, topLevelMappingProcessors);
@@ -144,7 +158,7 @@ export class MappingProcessor {
           }
         }
       }
-    } else if (subjectMap.template) {
+    } else if (RR.template in subjectMap) {
       this.count += 1;
       for (let i = 0; i < iteratorNumber; i++) {
         if (subjectFunctionValue) {
@@ -154,27 +168,31 @@ export class MappingProcessor {
             topLevelMappingProcessors,
           );
         }
-        let obj: Record<string, any> = {};
-        const ids = this.calculateTemplate(i, subjectMap.template);
+        let obj: ParsedMappingResult = {};
+        const ids = this.calculateTemplate(i, getValueIfDefined(subjectMap[RR.template]) as string);
         for (let id of ids) {
-          if (subjectMap.termType) {
-            const template = prefixhelper.replacePrefixWithURL(subjectMap.termType['@id'], this.prefixes);
-            switch (template) {
+          if (subjectMap[RR.termType]) {
+            const termType = getIdFromNodeObjectIfDefined(subjectMap[RR.termType]);
+            switch (termType) {
               case RR.BlankNode:
                 id = `_:${id}`;
                 break;
               case RR.IRI:
-                if ((!subjectMap.template && !subjectMap.reference) || (subjectMap.template && subjectMap.reference)) {
-                  throw new Error('Must use exactly one of - rr:template and rr:reference in SubjectMap!');
+                if (
+                  (!subjectMap[RR.template] && !subjectMap[RML.reference]) ||
+                  (subjectMap[RR.template] && subjectMap[RML.reference])
+                ) {
+                  throw new Error('Must use exactly one of - rr:template and rml:reference in SubjectMap!');
                 }
-                if (!helper.isURL(id)) {
-                  id = helper.addBase(id, this.prefixes);
-                }
+                // TODO: needed?
+                // if (!helper.isURL(id)) {
+                //   id = helper.addBase(id, this.prefixes);
+                // }
                 break;
               case RR.Literal:
                 break;
               default:
-                throw new Error(`Don't know: ${subjectMap.termType['@id']}`);
+                throw new Error(`Don't know: ${getIdFromNodeObjectIfDefined(subjectMap[RR.termType])}`);
             }
           }
           obj['@id'] = id;
@@ -189,12 +207,12 @@ export class MappingProcessor {
           result.push(obj);
         }
       }
-    } else if (subjectMap.functionValue) {
+    } else if (FNML.functionValue in subjectMap) {
       for (let i = 0; i < iteratorNumber; i++) {
         this.count += 1;
-        let obj: Record<string, any> = {};
+        let obj: ParsedMappingResult = {};
         const subjVal = await this.functionExecutor.executeFunctionFromValue(
-          subjectMap.functionValue,
+          subjectMap[FNML.functionValue]!,
           i,
           topLevelMappingProcessors,
         );
@@ -206,10 +224,7 @@ export class MappingProcessor {
         this.writeParentPath(i, parents, obj);
         result.push(obj);
       }
-    } else if (subjectMap.constant || (
-      subjectMap.termType &&
-      prefixhelper.replacePrefixWithURL(subjectMap.termType['@id'], this.prefixes) === RR.BlankNode
-    )) {
+    } else if (RR.constant in subjectMap || getIdFromNodeObjectIfDefined(subjectMap[RR.termType]) === RR.BlankNode) {
       // BlankNode with no template or id
       for (let i = 0; i < iteratorNumber; i++) {
         if (subjectFunctionValue) {
@@ -220,9 +235,9 @@ export class MappingProcessor {
           );
         }
         this.count += 1;
-        let obj: Record<string, any> = {};
-        if (subjectMap.constant) {
-          obj['@id'] = helper.getConstant(subjectMap.constant, this.prefixes);
+        let obj: ParsedMappingResult = {};
+        if (RR.constant in subjectMap) {
+          obj['@id'] = helper.getConstant(subjectMap[RR.constant]);
         }
         if (type) {
           obj['@type'] = type;
@@ -238,11 +253,14 @@ export class MappingProcessor {
       throw new Error('Unsupported subjectmap');
     }
 
-    result = helper.cutArray(result);
-    const nonSingleValueArrayResult = result.length === 1 ? result[0] : result;
+    // TODO: wtf is this...
+    // const firstResult = cutArray(result);
+    // const nonSingleValueArrayResult = Array.isArray(firstResult) && firstResult.length === 1
+    //   ? firstResult[0]
+    //   : firstResult;
     this.processed = true;
-    this.returnValue = nonSingleValueArrayResult;
-    return nonSingleValueArrayResult;
+    this.returnValue = result;
+    return result;
   }
 
   private writeParentPath(index: number, parents: string[], obj: Record<string, any>): void {
@@ -261,11 +279,11 @@ export class MappingProcessor {
     obj: Record<string, any>,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    if (this.mapping.predicateObjectMap) {
-      let objectMapArray = this.mapping.predicateObjectMap;
+    if (this.mapping[RR.predicateObjectMap]) {
+      let objectMapArray = this.mapping[RR.predicateObjectMap];
       objectMapArray = addArray(objectMapArray);
       for (const mapping of objectMapArray) {
-        const predicate = helper.getPredicate(mapping, this.prefixes);
+        const predicate = helper.getPredicate(mapping);
         if (Array.isArray(predicate)) {
           for (const predicateItem of predicate) {
             await this.handleSingleMapping(index, obj, mapping, predicateItem, topLevelMappingProcessors);
@@ -275,131 +293,113 @@ export class MappingProcessor {
         }
       }
     }
-    obj = helper.cutArray(obj);
-    return obj;
+    return cutArray(obj);
   }
 
   private async handleSingleMapping(
     index: number,
     obj: Record<string, any>,
-    mapping: any,
+    mapping: PredicateObjectMap,
     predicate: string,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<void> {
-    predicate = prefixhelper.replacePrefixWithURL(predicate, this.prefixes);
-    let object;
-    if (mapping.object) {
-      object = {
-        '@id': prefixhelper.replacePrefixWithURL(mapping.object['@id'], this.prefixes),
-      };
-    }
-    const objectmaps = [];
-    if (mapping.objectMap) {
-      if (Array.isArray(mapping.objectMap)) {
-        for (const t of mapping.objectMap) {
-          objectmaps.push(t);
-        }
+    let objects: ReferenceNodeObject[] | undefined;
+    if (RR.object in mapping) {
+      if (Array.isArray(mapping[RR.object])) {
+        objects = mapping[RR.object] as ReferenceNodeObject[];
       } else {
-        objectmaps.push(mapping.objectMap);
+        objects = [ mapping[RR.object] as ReferenceNodeObject ];
+      }
+    }
+    let objectmaps: ObjectMap[] | undefined;
+    if (RR.objectMap in mapping) {
+      if (Array.isArray(mapping[RR.objectMap])) {
+        objectmaps = mapping[RR.objectMap] as ObjectMap[];
+      } else {
+        objectmaps = [ mapping[RR.objectMap] as ObjectMap ];
       }
     }
 
-    if (object) {
-      helper.addToObj(obj, predicate, object);
-    } else {
+    if (objects) {
+      helper.addToObj(obj, predicate, objects);
+    } else if (objectmaps) {
       await Promise.all(
         objectmaps.map(async(objectmap): Promise<void> => {
           const {
-            functionValue,
-            parentTriplesMap,
-            joinCondition,
-            reference,
-            template,
-            languageMap,
+            [FNML.functionValue]: functionValue,
+            [RR.parentTriplesMap]: parentTriplesMap,
+            [RR.joinCondition]: joinCondition,
+            [RML.reference]: reference,
+            [RR.template]: template,
+            [RML.languageMap]: languageMap,
+            [RR.datatype]: datatype,
+            [RR.termType]: termType,
+            [RR.language]: language,
+            [RR.constant]: constant,
           } = objectmap;
-          let {
-            constant,
-            language,
-            termType,
-          } = objectmap;
-          const datatype = helper.isURL(objectmap.datatype)
-            ? objectmap.datatype
-            : prefixhelper.replacePrefixWithURL(objectmap.datatype, this.prefixes);
 
+          let languageString: string | undefined;
           if (languageMap) {
-            language = this.useLanguageMap(index, languageMap);
+            languageString = this.useLanguageMap(index, languageMap);
+          } else if (language) {
+            languageString = getValueIfDefined(language) as string;
           }
 
-          if (language && !tags(language).valid()) {
-            throw new Error(`Language tag: ${language} invalid!`);
+          if (languageString && !tags(languageString).valid()) {
+            throw new Error(`Language tag: ${languageString} invalid!`);
           }
+
+          const templateValue = getValueIfDefined(template) as string;
+          const termTypeValue = getIdFromNodeObjectIfDefined(termType);
+          const referenceValue = getValueIfDefined(reference) as string;
+          const datatypeValue = getIdFromNodeObjectIfDefined(datatype);
 
           if (template) {
             // We have a template definition
-            const temp = this.calculateTemplate(index, template, termType);
+            const temp = this.calculateTemplate(index, templateValue, termTypeValue);
             temp.forEach((te: string): void => {
               let teRef: ReferenceNodeObject | string;
-              if (termType) {
-                termType = prefixhelper.replacePrefixWithURL(termType, this.prefixes);
-                switch (termType) {
+              if (termTypeValue) {
+                switch (termTypeValue) {
                   case RR.BlankNode:
                     teRef = { '@id': `_:${te}` };
                     break;
                   case RR.IRI:
-                    if (!helper.isURL(te)) {
-                      teRef = { '@id': helper.addBase(te, this.prefixes) };
-                    } else {
-                      teRef = { '@id': te };
-                    }
+                    teRef = { '@id': te };
                     break;
                   case RR.Literal:
                     teRef = te;
                     break;
                   default:
-                    throw new Error(`Don't know: ${termType['@id']}`);
+                    throw new Error(`Don't know: ${termTypeValue}`);
                 }
               } else {
                 teRef = { '@id': te };
               }
-              teRef = helper.cutArray(teRef);
-              helper.setObjPredicate(obj, predicate, teRef, language, datatype);
+              helper.setObjPredicate(obj, predicate, cutArray(teRef), languageString, datatype);
             });
           } else if (reference) {
             // We have a reference definition
-            let ns = this.sourceParser.getData(index, reference, datatype);
+            let ns = this.sourceParser.getData(index, referenceValue, datatypeValue);
             let arr: any[] = [];
             ns = addArray(ns);
             ns.forEach((en): void => {
               arr.push(en);
             });
-            if (prefixhelper.replacePrefixWithURL(termType, this.prefixes) === RR.IRI) {
-              arr = arr.map((val): ReferenceNodeObject => {
-                if (!helper.isURL(val)) {
-                  return { '@id': helper.addBase(val, this.prefixes) };
-                }
-                return { '@id': val };
-              });
+            if (termTypeValue === RR.IRI) {
+              arr = arr.map((val): ReferenceNodeObject => ({ '@id': val }));
             }
             if (arr?.length > 0) {
-              arr = helper.cutArray(arr);
-              helper.setObjPredicate(obj, predicate, arr, language, datatype);
+              helper.setObjPredicate(obj, predicate, cutArray(arr), languageString, datatype);
             }
           } else if (constant) {
-            // We have a constant definition
-            constant = helper.cutArray(constant);
-            constant = helper.getConstant(constant, this.prefixes);
-
-            if (prefixhelper.replacePrefixWithURL(predicate, this.prefixes) !== RDF.type &&
-              termType &&
-              prefixhelper.replacePrefixWithURL(termType, this.prefixes) === RR.IRI
-            ) {
-              if (!helper.isURL(constant)) {
-                constant = { '@id': helper.addBase(constant, this.prefixes) };
-              } else {
-                constant = { '@id': constant };
-              }
+            const nonArrayConstantValue = cutArray(constant);
+            const singularConstantValue = helper.getConstant(nonArrayConstantValue);
+            if (predicate !== RDF.type && termTypeValue === RR.IRI) {
+              helper.setObjPredicate(obj, predicate, { '@id': singularConstantValue }, languageString, datatype);
+            } else {
+              helper.setObjPredicate(obj, predicate, singularConstantValue, languageString, datatype);
             }
-            helper.setObjPredicate(obj, predicate, constant, language, datatype);
           } else if (parentTriplesMap?.['@id']) {
             if (!obj.$parentTriplesMap) {
               obj.$parentTriplesMap = {};
@@ -412,8 +412,8 @@ export class MappingProcessor {
               }
               obj.$parentTriplesMap[predicate].push({
                 joinCondition: joinConditions.map((cond): any => ({
-                  parentPath: cond.parent,
-                  child: this.sourceParser.getData(index, cond.child),
+                  parentPath: getValueIfDefined(cond[RR.parent]) as string,
+                  child: this.sourceParser.getData(index, getValueIfDefined(cond[RR.child]) as string),
                 })),
                 mapID: objectmap['@id'],
               });
@@ -433,7 +433,7 @@ export class MappingProcessor {
               index,
               topLevelMappingProcessors,
             );
-            helper.setObjPredicate(obj, predicate, result, language, datatype);
+            helper.setObjPredicate(obj, predicate, result, languageString, datatype);
           }
         }),
       );
@@ -441,10 +441,6 @@ export class MappingProcessor {
   }
 
   private calculateTemplate(index: number, template: string, termType?: string): string[] {
-    if (termType) {
-      termType = prefixhelper.replacePrefixWithURL(termType, this.prefixes);
-    }
-
     const openBracketIndicies = helper.locations('{', template);
     const closedBracketIndicies = helper.locations('}', template);
     const words: string[] = [];
@@ -474,21 +470,21 @@ export class MappingProcessor {
       }
     });
     templates.forEach((thisTemplate: string, idx: number): void => {
-      templates[idx] = helper.replaceEscapedChar(prefixhelper.replacePrefixWithURL(thisTemplate, this.prefixes));
+      templates[idx] = helper.replaceEscapedChar(thisTemplate);
     });
     return templates;
   }
 
-  private useLanguageMap(index: number, termMap: TermMap): any {
-    if (termMap.constant) {
-      return termMap.constant;
+  private useLanguageMap(index: number, termMap: TermMap): string {
+    if (termMap[RR.constant]) {
+      return helper.getConstant(termMap[RR.constant]);
     }
-    if (termMap.reference) {
-      const vals = this.sourceParser.getData(index, termMap.reference);
+    if (termMap[RML.reference]) {
+      const vals = this.sourceParser.getData(index, getValueIfDefined(termMap[RML.reference]) as string);
       return addArray(vals)[0];
     }
-    if (termMap.template) {
-      const temp = this.calculateTemplate(index, termMap.template);
+    if (termMap[RR.template]) {
+      const temp = this.calculateTemplate(index, getValueIfDefined(termMap[RR.template]) as string);
       return addArray(temp)[0];
     }
     throw new Error('TermMap has neither constant, reference or template');

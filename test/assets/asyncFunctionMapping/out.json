@@ -13,7 +13,7 @@
   },
   {
     "@type": "http://mytestprefix.org/Sport",
-    "http://mytestprefix.org/description": "Tom A.likes the sports: Tennis and Football",
+    "http://mytestprefix.org/description": "Tom A. likes the sports: Tennis and Football",
     "@id": "_:http%3A%2F%2Fexample.test%2F%23SPORTSmapping_1"
   }
 ]

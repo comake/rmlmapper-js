@@ -1,63 +1,85 @@
-import type { ContextDefinition } from 'jsonld';
+import type { ContextDefinition, ValueObject } from 'jsonld';
+import type { FNML, RML, RR } from './Vocabulary';
 
 export type OrArray<T> = T | T[];
 
 export type JSONObject = Record<string, JSONValue>;
+
+export type JSONArray = JSONValue[];
 
 export type JSONValue =
   | string
   | number
   | boolean
   | {[x: string]: JSONValue }
-  | JSONValue[];
+  | JSONArray;
 
 export interface ReferenceNodeObject {
   ['@id']: string;
 }
 
+export interface LogicalSource {
+  [RML.iterator]: string | ValueObject;
+  [RML.referenceFormulation]: string | ReferenceNodeObject;
+  [RML.source]: string | ValueObject;
+}
+
+export interface JoinCondition {
+  [RR.child]: string | ValueObject;
+  [RR.parent]: string | ValueObject;
+}
+
 export interface TriplesMap {
   ['@id']: string;
   ['@type']: string;
-  logicalSource: OrArray<any>;
-  subjectMap: OrArray<SubjectMap>;
-  predicateObjectMap: OrArray<PredicateObjectMap>;
+  [RML.logicalSource]: LogicalSource;
+  [RR.subjectMap]: OrArray<SubjectMap>;
+  [RR.predicateObjectMap]: OrArray<PredicateObjectMap>;
 }
 
+export type ValueOf<T> = T[keyof T];
+
 export interface TermMap {
-  constant?: ReferenceNodeObject | string;
-  reference?: string;
-  template?: string;
-  termType?: string;
-  datatype?: string;
+  ['@id']?: string;
+  ['@type']?: string;
+  [RR.constant]?: ValueObject | string;
+  [RML.reference]?: ValueObject | string;
+  [RR.template]?: ValueObject | string;
+  [RR.termType]?: ReferenceNodeObject;
+  [RR.datatype]?: ReferenceNodeObject;
 }
 
 export interface ObjectMap extends TermMap {
-  functionValue?: FunctionValue;
-  parentTriplesMap?: TriplesMap;
+  [FNML.functionValue]?: FunctionValue;
+  [RR.parentTriplesMap]?: TriplesMap;
+  [RR.joinCondition]: JoinCondition;
+  [RML.languageMap]: TermMap;
+  [RR.language]: string | ValueObject;
 }
 
-export interface SubjectMap extends TermMap {}
+export interface SubjectMap extends TermMap {
+  [RR.class]: OrArray<ReferenceNodeObject> | FunctionValuedClass;
+  [FNML.functionValue]?: FunctionValue;
+}
+
+export interface FunctionValuedClass {
+  [FNML.functionValue]: FunctionValue;
+}
 
 export interface PredicateMap extends TermMap {}
 
 export interface PredicateObjectMap {
-  object?: OrArray<ReferenceNodeObject>;
-  objectMap?: OrArray<ObjectMap>;
-  predicate?: OrArray<ReferenceNodeObject>;
-  predicateMap?: OrArray<PredicateMap>;
+  [RR.object]?: OrArray<ReferenceNodeObject>;
+  [RR.objectMap]?: OrArray<ObjectMap>;
+  [RR.predicate]?: OrArray<ReferenceNodeObject>;
+  [RR.predicateMap]?: OrArray<PredicateMap>;
 }
 
 export interface FunctionValue {
-  predicateObjectMap: OrArray<PredicateObjectMap>;
+  [RR.predicateObjectMap]: OrArray<PredicateObjectMap>;
 }
 
-export interface LogicalSource {
-  iterator: string;
-  referenceFormulation: string | ReferenceNodeObject;
-  source: string;
-}
-
-export type Prefixes = Record<string, string>;
+export type FnoFunctionParameter = ObjectMap & { [RR.predicate]: ReferenceNodeObject };
 
 export interface ParseOptions {
   /**

@@ -133,7 +133,7 @@ describe('mapper functions', (): void => {
     });
 
     it('returns the current time as an ISO datetime string.', (): void => {
-      expect(predefinedFunctions[GREL.date_now]({})).toBe('2022-08-12T00:00:00.000Z');
+      expect(predefinedFunctions[GREL.date_now]()).toBe('2022-08-12T00:00:00.000Z');
     });
   });
 
@@ -461,7 +461,7 @@ describe('mapper functions', (): void => {
 
   describe('idlab:random', (): void => {
     it('returns a random uuid.', (): void => {
-      expect(predefinedFunctions[IDLAB.random]({})).toBe('abc123');
+      expect(predefinedFunctions[IDLAB.random]()).toBe('abc123');
       expect(uuid).toHaveBeenCalledTimes(1);
     });
   });
