@@ -6,7 +6,7 @@ import { FNML, FNO, GREL, RML, RR } from '../../src/util/Vocabulary';
 
 describe('A FunctionExector', (): void => {
   describe('executing functions', (): void => {
-    let parser: SourceParser;
+    let parser: SourceParser<any>;
     let executor: FunctionExecutor;
     let randomFunc: any;
 

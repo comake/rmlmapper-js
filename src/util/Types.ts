@@ -1,4 +1,4 @@
-import type { ContextDefinition, ValueObject } from 'jsonld';
+import type { ContextDefinition } from 'jsonld';
 import type { FNML, RML, RR } from './Vocabulary';
 
 export type OrArray<T> = T | T[];
@@ -14,19 +14,26 @@ export type JSONValue =
   | {[x: string]: JSONValue }
   | JSONArray;
 
+export interface ValueObject<T extends string | boolean | number | JSONObject | JSONArray> {
+  ['@type']: string;
+  ['@value']: T;
+  ['@language']?: string;
+  ['@direction']?: string;
+}
+
 export interface ReferenceNodeObject {
   ['@id']: string;
 }
 
 export interface LogicalSource {
-  [RML.iterator]: string | ValueObject;
-  [RML.referenceFormulation]: string | ReferenceNodeObject;
-  [RML.source]: string | ValueObject;
+  [RML.iterator]: string | ValueObject<string>;
+  [RML.referenceFormulation]: OrArray<string> | OrArray<ReferenceNodeObject>;
+  [RML.source]: OrArray<string> | OrArray<ValueObject<string>>;
 }
 
 export interface JoinCondition {
-  [RR.child]: string | ValueObject;
-  [RR.parent]: string | ValueObject;
+  [RR.child]: string | ValueObject<string>;
+  [RR.parent]: string | ValueObject<string>;
 }
 
 export interface TriplesMap {
@@ -42,9 +49,9 @@ export type ValueOf<T> = T[keyof T];
 export interface TermMap {
   ['@id']?: string;
   ['@type']?: string;
-  [RR.constant]?: ValueObject | string;
-  [RML.reference]?: ValueObject | string;
-  [RR.template]?: ValueObject | string;
+  [RR.constant]?: ValueObject<string> | string;
+  [RML.reference]?: ValueObject<string> | string;
+  [RR.template]?: ValueObject<string> | string;
   [RR.termType]?: ReferenceNodeObject;
   [RR.datatype]?: ReferenceNodeObject;
 }
@@ -54,7 +61,7 @@ export interface ObjectMap extends TermMap {
   [RR.parentTriplesMap]?: TriplesMap;
   [RR.joinCondition]: JoinCondition;
   [RML.languageMap]: TermMap;
-  [RR.language]: string | ValueObject;
+  [RR.language]: string | ValueObject<string>;
 }
 
 export interface SubjectMap extends TermMap {

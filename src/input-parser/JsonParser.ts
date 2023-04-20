@@ -9,21 +9,26 @@ type JsonValue =
   | boolean
   | JsonValue[];
 
-export class JsonParser extends SourceParser {
+export class JsonParser extends SourceParser<JSON> {
   private readonly json: JSON;
   private readonly paths: string[];
 
   public constructor(args: SourceParserArgs) {
     super(args);
-    this.json = args.source;
+    const source = this.readSourceWithCache();
+    this.json = source;
     this.paths = JSONPath({ path: args.iterator, json: this.json, resultType: 'path' });
+  }
+
+  protected parseSource(source: string): JSON {
+    return JSON.parse(source);
   }
 
   public getCount(): number {
     return this.paths.length;
   }
 
-  public getRawData(index: number, selector: string, datatype: string): any[] {
+  protected getRawData(index: number, selector: string, datatype: string): any[] {
     const sel = selector.replace(/^PATH~/u, '');
     const splitter = sel.startsWith('[') ? '' : '.';
     const values = JSONPath({
