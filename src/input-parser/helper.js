@@ -1,5 +1,5 @@
 const { addArray } = require('../util/ArrayUtil');
-const { RDF, XSD, RR } = require('../util/Vocabulary');
+const { RDF } = require('../util/Vocabulary');
 
 function setValueAtPredicate(obj, predicate, data, language, datatype) {
   if (language || datatype) {
