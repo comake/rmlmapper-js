@@ -5,18 +5,19 @@ import tags from 'language-tags';
 import { FunctionExecutor } from './FunctionExecutor';
 import { CsvParser } from './input-parser/CsvParser';
 import { FontoxpathParser } from './input-parser/FontoxpathParser';
-import helper from './input-parser/helper';
 import { JsonParser } from './input-parser/JsonParser';
 import type { SourceParser, SourceParserArgs } from './input-parser/SourceParser';
 import { XmlParser } from './input-parser/XmlParser';
-import { addArray, cutArray } from './util/ArrayUtil';
+import { addArray, cutArray, allCombinationsOfArray } from './util/ArrayUtil';
 import {
   getIdFromNodeObjectIfDefined,
   getValue,
   getConstant,
   getPredicateValueFromPredicateObjectMap,
   isFunctionValuedSubjectMap,
+  setObjPredicate,
 } from './util/ObjectUtil';
+import { getAllOcurrences } from './util/StringUtil';
 import type {
   FunctionValue,
   FunctionValuedClass,
@@ -414,10 +415,10 @@ export class MappingProcessor {
     if (RR.object in mapping) {
       if (Array.isArray(mapping[RR.object])) {
         (mapping[RR.object] as ReferenceNodeObject[]).forEach((objectItem): void => {
-          helper.setObjPredicate(obj, predicate, objectItem['@id']);
+          setObjPredicate(obj, predicate, objectItem['@id']);
         });
       } else {
-        helper.setObjPredicate(obj, predicate, (mapping[RR.object] as ReferenceNodeObject)['@id']);
+        setObjPredicate(obj, predicate, (mapping[RR.object] as ReferenceNodeObject)['@id']);
       }
     } else if (RR.objectMap in mapping) {
       let objectmaps: ObjectMap[] | undefined;
@@ -478,7 +479,7 @@ export class MappingProcessor {
               } else {
                 teRef = { '@id': te };
               }
-              helper.setObjPredicate(obj, predicate, cutArray(teRef), languageString, datatype);
+              setObjPredicate(obj, predicate, cutArray(teRef), languageString, datatype);
             });
           } else if (reference) {
             const referenceValue = getValue<string>(reference);
@@ -493,15 +494,15 @@ export class MappingProcessor {
               arr = arr.map((val): ReferenceNodeObject => ({ '@id': val }));
             }
             if (arr?.length > 0) {
-              helper.setObjPredicate(obj, predicate, cutArray(arr), languageString, datatype);
+              setObjPredicate(obj, predicate, cutArray(arr), languageString, datatype);
             }
           } else if (constant) {
             const nonArrayConstantValue = cutArray(constant);
             const singularConstantValue = getConstant(nonArrayConstantValue);
             if (predicate !== RDF.type && termTypeValue === RR.IRI) {
-              helper.setObjPredicate(obj, predicate, { '@id': singularConstantValue }, languageString, datatype);
+              setObjPredicate(obj, predicate, { '@id': singularConstantValue }, languageString, datatype);
             } else {
-              helper.setObjPredicate(obj, predicate, singularConstantValue, languageString, datatype);
+              setObjPredicate(obj, predicate, singularConstantValue, languageString, datatype);
             }
           } else if (parentTriplesMap?.['@id']) {
             if (!obj.$parentTriplesMap) {
@@ -536,7 +537,7 @@ export class MappingProcessor {
               index,
               topLevelMappingProcessors,
             );
-            helper.setObjPredicate(obj, predicate, result, languageString, datatype);
+            setObjPredicate(obj, predicate, result, languageString, datatype);
           }
         }),
       );
@@ -544,8 +545,8 @@ export class MappingProcessor {
   }
 
   private calculateTemplate(index: number, template: string, termType?: string): string[] {
-    const openBracketIndicies = helper.locations('{', template);
-    const closedBracketIndicies = helper.locations('}', template);
+    const openBracketIndicies = getAllOcurrences('{', template);
+    const closedBracketIndicies = getAllOcurrences('}', template);
     const words: string[] = [];
     const toInsert: any[][] = [];
     const templates: string[] = [];
@@ -559,7 +560,7 @@ export class MappingProcessor {
       const temp = addArray(this.sourceParser.getData(index, word));
       toInsert.push(temp);
     });
-    const allCombinations = helper.allPossibleCases(toInsert) as string[][];
+    const allCombinations = allCombinationsOfArray(toInsert);
     allCombinations.forEach((combinination: any, idxA: number): void => {
       let finTemp = template;
       combinination.forEach((word: string, idxB: number): void => {

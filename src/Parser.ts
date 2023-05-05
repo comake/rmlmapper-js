@@ -5,11 +5,9 @@
 */
 import * as jsonld from 'jsonld';
 import type { NodeObject } from 'jsonld';
-import replaceHelper, { jsonLDGraphToObj } from './helper/replace';
-import helper from './input-parser/helper';
 import type { ParsedMappingResult } from './MappingProcessor';
 import { MappingProcessor } from './MappingProcessor';
-import { addArray } from './util/ArrayUtil';
+import { addArray, intersection } from './util/ArrayUtil';
 import {
   findObjectWithIdInArray,
   removeMetaFromAllNodes,
@@ -18,6 +16,9 @@ import {
   getIdFromNodeObjectIfDefined,
   getValue,
   isTriplesMap,
+  replaceReferences,
+  jsonLDGraphToObj,
+  addToObjAsReference,
 } from './util/ObjectUtil';
 import { ttlToJson } from './util/TurtleUtil';
 import type { LogicalSource, ParseOptions, ProcessOptions, ReferenceNodeObject } from './util/Types';
@@ -50,9 +51,9 @@ export class RmlMapper {
     return out;
   }
 
-  private async processMapping(mapping: NodeObject): Promise<Record<string, jsonld.NodeObject[]>> {
+  private async processMapping(mapping: NodeObject): Promise<Record<string, NodeObject[]>> {
     const graph = mapping['@graph'] as NodeObject[];
-    const connectedGraph = jsonLDGraphToObj(graph) as NodeObject[];
+    const connectedGraph = jsonLDGraphToObj(graph);
     const output = await this.processTopLevelMappings(connectedGraph);
     return this.mergeJoin(output, connectedGraph);
   }
@@ -150,8 +151,8 @@ export class RmlMapper {
                   const toMapData = addArray(output[parentId]);
 
                   if (singleJoin.joinCondition) {
-                    const cache: Record<string, any> = {};
-                    singleJoin.joinCondition.forEach(({ parentPath }: Record<string, any>): void => {
+                    const cache: Record<string, Record<string, string[]>> = {};
+                    singleJoin.joinCondition.forEach(({ parentPath }): void => {
                       cache[parentPath] = {};
                       for (const tmd of toMapData) {
                         if (tmd.$parentPaths) {
@@ -165,35 +166,39 @@ export class RmlMapper {
                           if (!cache[parentPath][firstParentData]) {
                             cache[parentPath][firstParentData] = [];
                           }
-                          cache[parentPath][firstParentData].push(tmd['@id']);
+                          cache[parentPath][firstParentData].push(tmd['@id']!);
                         }
                       }
                     });
 
                     for (const entry of output[key]) {
                       const joinConditions = entry.$parentTriplesMap?.[predicate]?.[i]?.joinCondition ?? [];
-                      const childrenMatchingCondition = joinConditions.map((cond: any): any => {
-                        let childData = cond.child;
-                        childData = addArray(childData);
-                        if (childData.length !== 1) {
-                          console.warn(`joinConditions child must return only one value! Child: ${childData}`);
+                      const childrenMatchingCondition = joinConditions.map((joinCondition): string[] => {
+                        let firstChild: string;
+                        if (Array.isArray(joinCondition.child)) {
+                          if (joinCondition.child.length !== 1) {
+                            console.warn(
+                              `joinCoinConditionitions child must return only one value! Child: ${joinCondition.child}`,
+                            );
+                          }
+                          firstChild = joinCondition.child[0];
+                        } else {
+                          firstChild = joinCondition.child;
                         }
-                        childData = childData[0];
 
-                        const matchingChildren = cache[cond.parentPath][childData];
+                        const matchingChildren = cache[joinCondition.parentPath][firstChild];
                         return matchingChildren || [];
                       });
 
-                      const childrenMatchingAllCondition = helper.intersection(childrenMatchingCondition);
-
+                      const childrenMatchingAllCondition = intersection(childrenMatchingCondition);
                       for (const child of childrenMatchingAllCondition) {
-                        helper.addToObjInId(entry, predicate, child);
+                        addToObjAsReference(entry, predicate, child);
                       }
                     }
                   } else {
                     for (const tmd of toMapData) {
                       for (const entry of output[key]) {
-                        helper.addToObjInId(entry, predicate, tmd['@id']);
+                        addToObjAsReference(entry, predicate, tmd['@id']!);
                       }
                     }
                   }
@@ -216,7 +221,7 @@ export class RmlMapper {
     convertRdfTypeToJsonldType(output);
 
     if (this.options?.replace) {
-      output = replaceHelper.replace(output);
+      output = replaceReferences(output);
     }
 
     if (this.options?.compact) {
