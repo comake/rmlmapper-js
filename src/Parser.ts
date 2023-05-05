@@ -7,7 +7,6 @@ import * as jsonld from 'jsonld';
 import type { NodeObject } from 'jsonld';
 import replaceHelper, { jsonLDGraphToObj } from './helper/replace';
 import helper from './input-parser/helper';
-import { getTopLevelMappings, replaceConstantShortProps, ttlToJson } from './mapfile/mapfileParser';
 import type { ParsedMappingResult } from './MappingProcessor';
 import { MappingProcessor } from './MappingProcessor';
 import { addArray } from './util/ArrayUtil';
@@ -16,16 +15,17 @@ import {
   removeMetaFromAllNodes,
   removeEmptyFromAllNodes,
   convertRdfTypeToJsonldType,
-  getValueIfDefined,
   getIdFromNodeObjectIfDefined,
+  getValue,
+  isTriplesMap,
 } from './util/ObjectUtil';
+import { ttlToJson } from './util/TurtleUtil';
 import type { LogicalSource, ParseOptions, ProcessOptions, ReferenceNodeObject } from './util/Types';
 import { RML, RR } from './util/Vocabulary';
 
 export class RmlMapper {
   private readonly sourceCache = {};
   private readonly options: ProcessOptions;
-  private readonly topLevelMappingProcessors: Record<string, MappingProcessor> = {};
 
   public constructor(options: ProcessOptions) {
     this.options = options;
@@ -51,36 +51,39 @@ export class RmlMapper {
   }
 
   private async processMapping(mapping: NodeObject): Promise<Record<string, jsonld.NodeObject[]>> {
-    const graph = mapping['@graph'];
-    replaceConstantShortProps(graph);
-    const connectedGraph = jsonLDGraphToObj(graph);
-    const topLevelMappings = getTopLevelMappings(connectedGraph);
-    const output: Record<string, ParsedMappingResult[]> = {};
-    for (const mappingId of topLevelMappings) {
-      const topLevelMapping = findObjectWithIdInArray(connectedGraph, mappingId);
-      if (topLevelMapping) {
-        this.topLevelMappingProcessors[mappingId] = this.createProcessorForMapping(connectedGraph, topLevelMapping);
-      }
-    }
-
-    for (const [ mappingId, proccessor ] of Object.entries(this.topLevelMappingProcessors)) {
-      if (proccessor.hasProcessed()) {
-        output[mappingId] = proccessor.getReturnValue();
-      } else {
-        output[mappingId] = await proccessor.processMapping(this.topLevelMappingProcessors);
-      }
-    }
+    const graph = mapping['@graph'] as NodeObject[];
+    const connectedGraph = jsonLDGraphToObj(graph) as NodeObject[];
+    const output = await this.processTopLevelMappings(connectedGraph);
     return this.mergeJoin(output, connectedGraph);
   }
 
+  private async processTopLevelMappings(graph: NodeObject[]): Promise<Record<string, ParsedMappingResult[]>> {
+    const topLevelMappingProcessors = graph
+      .reduce((obj: Record<string, MappingProcessor>, node: NodeObject): Record<string, MappingProcessor> => {
+        if (isTriplesMap(node)) {
+          obj[node['@id']!] = this.createProcessorForMapping(graph, node);
+        }
+        return obj;
+      }, {});
+    if (Object.keys(topLevelMappingProcessors).length === 0) {
+      throw new Error('No top level mapping found');
+    }
+    const output: Record<string, ParsedMappingResult[]> = {};
+    for (const [ mappingId, proccessor ] of Object.entries(topLevelMappingProcessors)) {
+      if (proccessor.hasProcessed()) {
+        output[mappingId] = proccessor.getReturnValue();
+      } else {
+        output[mappingId] = await proccessor.processMapping(topLevelMappingProcessors);
+      }
+    }
+    return output;
+  }
+
   private createProcessorForMapping(
-    data: any[],
+    data: NodeObject[],
     mapping: any,
   ): MappingProcessor {
-    const logicalSource = findObjectWithIdInArray(
-      data,
-      mapping[RML.logicalSource]['@id'],
-    ) as unknown as LogicalSource;
+    const logicalSource = findObjectWithIdInArray(data, mapping[RML.logicalSource]['@id']) as unknown as LogicalSource;
     const referenceFormulation = this.getReferenceFormulationFromLogicalSource(logicalSource);
     const iterator = this.getIteratorFromLogicalSource(logicalSource, referenceFormulation);
     const source = this.getSourceFromLogicalSource(logicalSource);
@@ -96,18 +99,32 @@ export class RmlMapper {
   }
 
   private getReferenceFormulationFromLogicalSource(logicalSource: LogicalSource): string {
-    return getIdFromNodeObjectIfDefined(logicalSource[RML.referenceFormulation])!;
+    const referenceFormulation = logicalSource[RML.referenceFormulation];
+    if (Array.isArray(referenceFormulation)) {
+      if (referenceFormulation.length === 1) {
+        return getIdFromNodeObjectIfDefined(referenceFormulation[0])!;
+      }
+      throw new Error('Only one rml:referenceFormulations may be supplied. Found multiple.');
+    }
+    return getIdFromNodeObjectIfDefined(referenceFormulation)!;
   }
 
   private getSourceFromLogicalSource(logicalSource: LogicalSource): string {
-    return getValueIfDefined(logicalSource[RML.source]) as string;
+    const source = logicalSource[RML.source];
+    if (Array.isArray(source)) {
+      if (source.length === 1) {
+        return getValue<string>(source[0]);
+      }
+      throw new Error('Exactly one rml:source must be supplied. Found multiple.');
+    }
+    return getValue(source);
   }
 
   private getIteratorFromLogicalSource(logicalSource: LogicalSource, referenceFormulation: string): string {
     if (referenceFormulation === 'CSV') {
       return '$';
     }
-    return getValueIfDefined(logicalSource[RML.iterator]) as string;
+    return getValue<string>(logicalSource[RML.iterator]);
   }
 
   private mergeJoin(

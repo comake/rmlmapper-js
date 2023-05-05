@@ -51,6 +51,7 @@
     "@types/jsonld": "^1.5.6",
     "@types/language-tags": "^1.0.1",
     "@types/mime-types": "^2.1.1",
+    "@types/n3": "^1.10.4",
     "@types/node": "^18.0.3",
     "@types/utm": "^1.1.1",
     "@types/uuid": "^8.3.4",

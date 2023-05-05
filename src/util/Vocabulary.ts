@@ -35,6 +35,12 @@ export const RR = createNamespace('http://www.w3.org/ns/r2rml#', [
   'parent',
   'language',
   'graph',
+  'PredicateObjectMap',
+  'PredicateMap',
+  'ObjectMap',
+  'SubjectMap',
+  'Join',
+  'TriplesMap',
 ]);
 
 export const RML = createNamespace('http://semweb.mmlab.be/ns/rml#', [
@@ -44,6 +50,7 @@ export const RML = createNamespace('http://semweb.mmlab.be/ns/rml#', [
   'referenceFormulation',
   'iterator',
   'languageMap',
+  'LogicalSource',
 ]);
 
 export const FNO = createNamespace('http://w3id.org/function/ontology#', [
@@ -52,6 +59,7 @@ export const FNO = createNamespace('http://w3id.org/function/ontology#', [
 
 export const FNML = createNamespace('http://semweb.mmlab.be/ns/fnml#', [
   'functionValue',
+  'FunctionValue',
 ]);
 
 export const FNO_HTTPS = createNamespace('https://w3id.org/function/ontology#', [
@@ -132,6 +140,7 @@ export const GREL = createNamespace('http://users.ugent.be/~bjdmeest/function/gr
   'string_toNumber',
   'p_any_e',
   'string_contains',
+  'string_length',
 ]);
 
 export const IDLAB = createNamespace('http://example.com/idlab/function/', [

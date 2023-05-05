@@ -6,7 +6,7 @@ import { FNML, FNO, GREL, RML, RR } from '../../src/util/Vocabulary';
 
 describe('A FunctionExector', (): void => {
   describe('executing functions', (): void => {
-    let parser: SourceParser;
+    let parser: SourceParser<any>;
     let executor: FunctionExecutor;
     let randomFunc: any;
 
@@ -24,14 +24,16 @@ describe('A FunctionExector', (): void => {
     });
 
     it('throws an error if the function name cannot be found.', async(): Promise<void> => {
-      const functionValue = { [RR.predicateObjectMap]: []};
+      const functionValue = { '@type': FNML.FunctionValue, [RR.predicateObjectMap]: []};
       await expect(executor.executeFunctionFromValue(functionValue, 0, {}))
         .rejects.toThrow('Failed to find function name in predicatePbjectMap');
     });
 
     it('throws an error if no object or object map is specified in a predicate object map.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
         }],
       };
@@ -41,7 +43,9 @@ describe('A FunctionExector', (): void => {
 
     it('throws an error if the object map does not have a constant.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.objectMap]: {},
         }],
@@ -52,11 +56,13 @@ describe('A FunctionExector', (): void => {
 
     it('throws an error if an array of functions are specified in one object map.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.objectMap]: [
-            { [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
-            { [RR.constant]: { '@id': 'http://example.com#randomFunc2' }},
+            { '@type': RR.ObjectMap, [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
+            { '@type': RR.ObjectMap, [RR.constant]: { '@id': 'http://example.com#randomFunc2' }},
           ],
         }],
       } as FunctionValue;
@@ -66,7 +72,9 @@ describe('A FunctionExector', (): void => {
 
     it('throws an error if an array functions are specified in one object.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.object]: [
             { '@id': 'http://example.com#randomFunc' },
@@ -81,8 +89,10 @@ describe('A FunctionExector', (): void => {
     it('throws an error if no predicate or predicate map is specified in a predicate object map.',
       async(): Promise<void> => {
         const functionValue = {
+          '@type': FNML.FunctionValue,
           [RR.predicateObjectMap]: [{
-            [RR.objectMap]: { [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
+            '@type': RR.PredicateObjectMap,
+            [RR.objectMap]: { '@type': RR.ObjectMap, [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
           }],
         } as FunctionValue;
         await expect(executor.executeFunctionFromValue(functionValue, 0, {}))
@@ -91,7 +101,9 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through a predicate.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.object]: { '@id': 'http://example.com#randomFunc' },
         }],
@@ -101,8 +113,10 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through a predicateMap.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
-          [RR.predicateMap]: { [RR.constant]: { '@id': FNO.executes }},
+          '@type': RR.PredicateObjectMap,
+          [RR.predicateMap]: { '@type': RR.PredicateMap, [RR.constant]: { '@id': FNO.executes }},
           [RR.object]: { '@id': 'http://example.com#randomFunc' },
         }],
       } as FunctionValue;
@@ -111,10 +125,12 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through an array of predicateMaps.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicateMap]: [
-            { [RR.constant]: { '@id': FNO.executes }},
-            { [RR.constant]: { '@id': 'https://example.com/' }},
+            { '@type': RR.PredicateMap, [RR.constant]: { '@id': FNO.executes }},
+            { '@type': RR.PredicateMap, [RR.constant]: { '@id': 'https://example.com/' }},
           ],
           [RR.object]: { '@id': 'http://example.com#randomFunc' },
         }],
@@ -124,7 +140,9 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through an array of predicates.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: [
             { '@id': FNO.executes },
             { '@id': 'https://example.com/otherpredicate' },
@@ -137,7 +155,9 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through an array of one object.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.object]: [
             { '@id': 'http://example.com#randomFunc' },
@@ -149,10 +169,12 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through an array of one ObjectMap.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.objectMap]: [
-            { [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
+            { '@type': RR.ObjectMap, [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
           ],
         }],
       } as FunctionValue;
@@ -161,9 +183,11 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through a singular ObjectMap.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [{
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
-          [RR.objectMap]: { [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
+          [RR.objectMap]: { '@type': RR.ObjectMap, [RR.constant]: { '@id': 'http://example.com#randomFunc' }},
         }],
       } as FunctionValue;
       await expect(executor.executeFunctionFromValue(functionValue, 0, {})).resolves.toBe('abc123');
@@ -171,7 +195,9 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function defined through a singular PredicateObjectMap.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: {
+          '@type': RR.PredicateObjectMap,
           [RR.predicate]: { '@id': FNO.executes },
           [RR.object]: { '@id': 'http://example.com#randomFunc' },
         },
@@ -181,14 +207,17 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a parameter with an array of ObjectMaps.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': 'http://example.com#randomFunc' },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
-            [RR.objectMap]: [{ [RR.constant]: '1' }],
+            [RR.objectMap]: [{ '@type': RR.ObjectMap, [RR.constant]: '1' }],
           },
         ],
       } as FunctionValue;
@@ -200,14 +229,17 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a parameter with a singular ObjectMaps.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': 'http://example.com#randomFunc' },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
-            [RR.objectMap]: { [RR.constant]: '1' },
+            [RR.objectMap]: { '@type': RR.ObjectMap, [RR.constant]: '1' },
           },
         ],
       } as FunctionValue;
@@ -220,14 +252,17 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a reference parameter.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': 'http://example.com#randomFunc' },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
-            [RR.objectMap]: { [RML.reference]: 'alpha' },
+            [RR.objectMap]: { '@type': RR.ObjectMap, [RML.reference]: 'alpha' },
           },
         ],
       } as FunctionValue;
@@ -240,14 +275,17 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a template parameter.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': 'http://example.com#randomFunc' },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
-            [RR.objectMap]: { [RR.template]: 'https://example.com/{alpha}' },
+            [RR.objectMap]: { '@type': RR.ObjectMap, [RR.template]: 'https://example.com/{alpha}' },
           },
         ],
       } as FunctionValue;
@@ -260,16 +298,22 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a functionValue parameter.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': 'http://example.com#randomFunc' },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
             [RR.objectMap]: {
+              '@type': RR.ObjectMap,
               [FNML.functionValue]: {
+                '@type': FNML.FunctionValue,
                 [RR.predicateObjectMap]: {
+                  '@type': RR.PredicateObjectMap,
                   [RR.predicate]: { '@id': FNO.executes },
                   [RR.object]: { '@id': 'http://example.com#randomFunc' },
                 },
@@ -288,14 +332,17 @@ describe('A FunctionExector', (): void => {
 
     it('executes a function with a predefined functionValue.', async(): Promise<void> => {
       const functionValue = {
+        '@type': FNML.FunctionValue,
         [RR.predicateObjectMap]: [
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': FNO.executes },
             [RR.object]: { '@id': GREL.toUpperCase },
           },
           {
+            '@type': RR.PredicateObjectMap,
             [RR.predicate]: { '@id': 'http://example.com#parameter' },
-            [RR.objectMap]: { [RR.constant]: 'loud' },
+            [RR.objectMap]: { '@type': RR.ObjectMap, [RR.constant]: 'loud' },
           },
         ],
       } as FunctionValue;

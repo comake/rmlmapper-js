@@ -1,12 +1,5 @@
 const { addArray } = require('../util/ArrayUtil');
-const { RDF, XSD, RR } = require('../util/Vocabulary');
-
-const cleanString = (path) => {
-  if (path.startsWith('.') || path.startsWith('/')) {
-    path = path.substr(1);
-  }
-  return path;
-};
+const { RDF } = require('../util/Vocabulary');
 
 function setValueAtPredicate(obj, predicate, data, language, datatype) {
   if (language || datatype) {
@@ -73,27 +66,6 @@ const locations = (substring, string) => {
   return a;
 };
 
-const getConstant = (constant) => {
-  if (typeof constant === 'object') {
-    if ('@id' in constant) {
-      return constant['@id'];
-    }
-    if ('@value' in constant) {
-      if (constant['@type'] === XSD.integer) {
-        return Number.parseInt(constant['@value'], 10);
-      }
-      if (constant['@type'] === XSD.double) {
-        return Number.parseFloat(constant['@value'], 10);
-      }
-      if (constant['@type'] === XSD.boolean) {
-        return constant['@value'] === true || constant['@value'] === 'true'
-      }
-      return constant['@value']
-    }
-  }
-  return constant;
-};
-
 const addToObj = (obj, pred, data) => {
   if (obj[pred]) {
     const existingValueAsArray = addArray(obj[pred]);
@@ -117,21 +89,6 @@ const addToObjInId = (obj, pred, data) => {
   }
 };
 
-/* const pattern = new RegExp('^(https?:\\/\\/)?'
-        + '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'
-        + '((\\d{1,3}\\.){3}\\d{1,3}))'
-        + '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'
-        + '(\\?[;&a-z\\d%_.~+=-]*)?'
-        + '(\\#[-a-z\\d_]*)?$', 'i'); */
-const isURL = (str) => /\w+:(\/\/)[^\s]+/.test(str);
-const addBase = (str, prefixes) => prefixes.base + str;
-
-const escapeChar = (str) => {
-  str = replaceAll(str, '\\\\{', '#replaceOpenBr#');
-  str = replaceAll(str, '\\\\}', '#replaceClosingBr#');
-  return str;
-};
-
 const allPossibleCases = (arr) => {
   if (arr.length === 0) {
     return [];
@@ -149,63 +106,11 @@ const allPossibleCases = (arr) => {
   return result;
 };
 
-const replaceEscapedChar = (str) => {
-  str = replaceAll(str, '#replaceOpenBr#', '{');
-  str = replaceAll(str, '#replaceClosingBr#', '}');
-  return str;
-};
-
-const replaceAll = (str, search, replacement) => str.replace(new RegExp(search, 'g'), replacement);
-
-const toURIComponent = (str) => {
-  str = encodeURIComponent(str);
-  str = str.replace(/\(/g, '%28');
-  str = str.replace(/\)/g, '%29');
-  return str;
-};
-
-const getPredicate = (mapping) => {
-  let predicate;
-  if (mapping[RR.predicate]) {
-    if (Array.isArray(mapping[RR.predicate])) {
-      predicate = [];
-      mapping[RR.predicate].forEach((pre) => {
-        predicate.push(pre['@id']);
-      });
-    } else {
-      predicate = mapping[RR.predicate]['@id'];
-    }
-  } else if (mapping[RR.predicateMap]) {
-    // in predicateMap only constant allowed
-    if (Array.isArray(mapping[RR.predicateMap])) {
-      predicate = [];
-      for (let temp of mapping[RR.predicateMap]) {
-        temp = getConstant(temp[RR.constant]);
-        predicate.push(temp);
-      }
-    } else {
-      predicate = mapping[RR.predicateMap];
-      predicate = getConstant(predicate[RR.constant]);
-    }
-  } else {
-    throw new Error('Error: no predicate specified!');
-  }
-  return predicate;
-};
-
 const intersection = (arrOfArr) => arrOfArr.reduce((a, b) => a.filter((c) => b.includes(c)));
 
-module.exports.escapeChar = escapeChar;
 module.exports.allPossibleCases = allPossibleCases;
-module.exports.toURIComponent = toURIComponent;
-module.exports.replaceEscapedChar = replaceEscapedChar;
-module.exports.cleanString = cleanString;
 module.exports.locations = locations;
 module.exports.addToObj = addToObj;
 module.exports.addToObjInId = addToObjInId;
-module.exports.isURL = isURL;
-module.exports.addBase = addBase;
-module.exports.getConstant = getConstant;
 module.exports.setObjPredicate = setObjPredicate;
-module.exports.getPredicate = getPredicate;
 module.exports.intersection = intersection;

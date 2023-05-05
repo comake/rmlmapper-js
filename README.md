@@ -134,7 +134,7 @@ export interface ParseOptions {
 ## Usage
 
 ```typescript
-import * as RmlParser from '@comake/rmlmapper-js';
+import * as RmlMapper from '@comake/rmlmapper-js';
 
 const inputFiles = {
   'input.json': '{ "name": "Adler" }'
@@ -158,7 +158,7 @@ const turtleMapping = `
   ];
 `;
 
-const turtleMappingResult = await parser.parseTurtle(turtleMapping, inputFiles, options);
+const turtleMappingResult = await RmlMapper.parseTurtle(turtleMapping, inputFiles, options);
 
 // With a JSON-LD Mapping
 const jsonLdMapping = {
@@ -171,7 +171,7 @@ const jsonLdMapping = {
   }
 }
 
-const jsonLdMappingResult = await parser.parseJsonLd(jsonLdMapping, inputFiles, options);
+const jsonLdMappingResult = await RmlMapper.parseJsonLd(jsonLdMapping, inputFiles, options);
 ```
 
 ## Example

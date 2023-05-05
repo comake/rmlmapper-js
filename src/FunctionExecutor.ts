@@ -1,34 +1,41 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import type { ValueObject } from 'jsonld';
-import { addToObj, getConstant } from './input-parser/helper';
+import { addToObj } from './input-parser/helper';
 import type { SourceParser } from './input-parser/SourceParser';
 import type { MappingProcessor } from './MappingProcessor';
 import { predefinedFunctions } from './PredefinedFunctions';
 import { returnFirstItemInArrayOrValue, addArray } from './util/ArrayUtil';
-import { getIdFromNodeObjectIfDefined, getValueIfDefined } from './util/ObjectUtil';
+import {
+  getIdFromNodeObjectIfDefined,
+  getValue,
+  getConstant,
+  getPredicateValueFromPredicateObjectMap,
+  getFunctionNameFromPredicateObjectMap,
+  isFnoExecutesPredicate,
+  predicateContainsFnoExecutes,
+} from './util/ObjectUtil';
 import type {
   FnoFunctionParameter,
   FunctionValue,
   ObjectMap,
   OrArray,
-  PredicateMap,
   PredicateObjectMap,
   ReferenceNodeObject,
   TriplesMap,
+  ValueObject,
 } from './util/Types';
-import { FNML, FNO, FNO_HTTPS, RML, RR } from './util/Vocabulary';
+import { FNML, RML, RR } from './util/Vocabulary';
 
 type FnoFunction = (parameters: any) => Promise<any> | any;
 
 const templateRegex = /(?:\{(.*?)\})/ug;
 
 interface FunctionExecutorArgs {
-  parser: SourceParser;
+  parser: SourceParser<any>;
   functions?: Record<string, FnoFunction>;
 }
 
 export class FunctionExecutor {
-  private readonly parser: SourceParser;
+  private readonly parser: SourceParser<any>;
   private readonly functions?: Record<string, FnoFunction>;
 
   public constructor(args: FunctionExecutorArgs) {
@@ -50,83 +57,15 @@ export class FunctionExecutor {
   private getFunctionName(predicateObjectMapField: OrArray<Record<string, any>>): string {
     const predicateObjectMaps = addArray(predicateObjectMapField) as PredicateObjectMap[];
     for (const predicateObjectMap of predicateObjectMaps) {
-      const predicate = this.getPredicateValueFromPredicateObjectMap(predicateObjectMap);
-      if (this.predicateContainsFnoExecutes(predicate)) {
-        const functionName = this.getFunctionNameFromPredicateObjectMap(predicateObjectMap);
+      const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap);
+      if (predicateContainsFnoExecutes(predicate)) {
+        const functionName = getFunctionNameFromPredicateObjectMap(predicateObjectMap);
         if (functionName) {
           return functionName;
         }
       }
     }
     throw new Error('Failed to find function name in predicatePbjectMap');
-  }
-
-  private getPredicateValueFromPredicateObjectMap(mapping: PredicateObjectMap): OrArray<string> {
-    const { [RR.predicate]: predicate, [RR.predicateMap]: predicateMap } = mapping;
-    if (predicate) {
-      return this.getPredicateValue(predicate);
-    }
-    if (predicateMap) {
-      return this.getPredicateValueFromPredicateMap(predicateMap);
-    }
-    throw new Error('No predicate specified in PredicateObjectMap');
-  }
-
-  private getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<string> {
-    if (Array.isArray(predicate)) {
-      return predicate.map((predicateItem: ReferenceNodeObject): string => predicateItem['@id']);
-    }
-    return predicate['@id'];
-  }
-
-  private getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
-    // TODO [>=1.0.0]: add support for reference and template here
-    if (Array.isArray(predicateMap)) {
-      return predicateMap.map((predicateMapItem): string => getConstant(predicateMapItem[RR.constant]));
-    }
-    return getConstant(predicateMap[RR.constant]);
-  }
-
-  private predicateContainsFnoExecutes(predicate: OrArray<string>): boolean {
-    if (Array.isArray(predicate)) {
-      return predicate.some((predicateItem): boolean => this.isFnoExecutesPredicate(predicateItem));
-    }
-    return this.isFnoExecutesPredicate(predicate);
-  }
-
-  private getFunctionNameFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): string | undefined {
-    const { [RR.objectMap]: objectMap, [RR.object]: object } = predicateObjectMap;
-    if (object) {
-      return this.getFunctionNameFromObject(object);
-    }
-    if (objectMap) {
-      return this.getFunctionNameFromObjectMap(objectMap);
-    }
-    throw new Error('No object specified in PredicateObjectMap');
-  }
-
-  private getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>): string {
-    if (Array.isArray(object)) {
-      if (object.length === 1) {
-        return getConstant(object[0]);
-      }
-      throw new Error('Only one function may be specified per PredicateObjectMap');
-    }
-    return getConstant(object);
-  }
-
-  private getFunctionNameFromObjectMap(objectMap: OrArray<ObjectMap>): string {
-    const isArray = Array.isArray(objectMap);
-    if (isArray && objectMap.length > 1) {
-      throw new Error('Only one function may be specified per PredicateObjectMap');
-    }
-    if (isArray && objectMap[0][RR.constant]) {
-      return getConstant(objectMap[0][RR.constant]!);
-    }
-    if (!isArray && objectMap[RR.constant]) {
-      return getConstant(objectMap[RR.constant]!);
-    }
-    throw new Error('Object must be specified through constant');
   }
 
   private getFunctionParameters(predicateObjectMapField: OrArray<PredicateObjectMap>): FnoFunctionParameter[] {
@@ -149,10 +88,12 @@ export class FunctionExecutor {
   }
 
   private getParametersFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): FnoFunctionParameter[] {
-    const predicate = this.getPredicateValueFromPredicateObjectMap(predicateObjectMap) as string;
-    if (!this.isFnoExecutesPredicate(predicate)) {
-      const { [RR.objectMap]: objectMap } = predicateObjectMap;
-      // TODO [>=1.0.0]: add support for object here?
+    const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap) as string;
+    if (!isFnoExecutesPredicate(predicate)) {
+      const { [RR.object]: object, [RR.objectMap]: objectMap } = predicateObjectMap;
+      if (object) {
+        return this.getParametersFromObject(object, predicate);
+      }
       if (objectMap) {
         return this.getParametersFromObjectMap(objectMap, predicate);
       }
@@ -160,8 +101,14 @@ export class FunctionExecutor {
     return [];
   }
 
-  private isFnoExecutesPredicate(predicate: string): boolean {
-    return predicate === FNO.executes || predicate === FNO_HTTPS.executes;
+  private getParametersFromObject(object: OrArray<ReferenceNodeObject>, predicate: string): FnoFunctionParameter[] {
+    if (Array.isArray(object)) {
+      const objectMapsFromObject = object.map((objectItem): ObjectMap =>
+        ({ '@type': RR.ObjectMap, [RR.constant]: objectItem }));
+      return this.getParametersFromObjectMap(objectMapsFromObject, predicate);
+    }
+    const objectMapFromObject = { '@type': RR.ObjectMap, [RR.constant]: object };
+    return this.getParametersFromObjectMap(objectMapFromObject, predicate);
   }
 
   private getParametersFromObjectMap(objectMap: OrArray<ObjectMap>, predicate: string): FnoFunctionParameter[] {
@@ -200,35 +147,35 @@ export class FunctionExecutor {
     if (RR.constant in parameter) {
       return getConstant(parameter[RR.constant]);
     }
-    if (parameter[RML.reference]) {
+    if (RML.reference in parameter) {
       return this.getValueOfReference(parameter[RML.reference]!, index, parameter[RR.datatype]);
     }
-    if (parameter[RR.template]) {
+    if (RR.template in parameter) {
       return this.resolveTemplate(parameter[RR.template]!, index);
     }
-    if (parameter[FNML.functionValue]) {
+    if (FNML.functionValue in parameter) {
       return await this.resolveFunctionValue(parameter[FNML.functionValue]!, index, topLevelMappingProcessors);
     }
-    if (parameter[RR.parentTriplesMap]) {
+    if (RR.parentTriplesMap in parameter) {
       return await this.resolveTriplesMap(parameter[RR.parentTriplesMap]!, topLevelMappingProcessors);
     }
   }
 
   private getValueOfReference(
-    reference: string | ValueObject,
+    reference: string | ValueObject<string>,
     index: number,
     datatype?: string | ReferenceNodeObject,
   ): OrArray<any> {
     const data = this.parser.getData(
       index,
-      getValueIfDefined(reference) as string,
+      getValue<string>(reference),
       getIdFromNodeObjectIfDefined(datatype),
     );
     return returnFirstItemInArrayOrValue(data);
   }
 
-  private resolveTemplate(template: string | ValueObject, index: number): string {
-    let resolvedTemplate = getValueIfDefined(template) as string;
+  private resolveTemplate(template: string | ValueObject<string>, index: number): string {
+    let resolvedTemplate = getValue<string>(template);
     let match = templateRegex.exec(resolvedTemplate);
     while (match) {
       const variableValue = this.parser.getData(index, match[1]);
@@ -251,7 +198,7 @@ export class FunctionExecutor {
     triplesMap: TriplesMap,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    const processor = topLevelMappingProcessors[triplesMap['@id']];
+    const processor = topLevelMappingProcessors[triplesMap['@id']!];
     if (processor) {
       if (processor.hasProcessed()) {
         return processor.getReturnValue();
