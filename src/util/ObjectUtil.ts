@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import type { NodeObject } from 'jsonld';
-import helper from '../input-parser/helper.js';
 import { addArray } from './ArrayUtil';
 import type {
   JSONArray,
@@ -14,6 +14,24 @@ import type {
   ValueObject,
 } from './Types';
 import { FNML, FNO, FNO_HTTPS, RDF, RML, RR, XSD } from './Vocabulary';
+
+export function addToObj(obj: Record<string, any>, pred: string, data: any): void {
+  if (obj[pred]) {
+    const dataAsArray = Array.isArray(data) ? data : [ data ];
+    if (Array.isArray(obj[pred])) {
+      obj[pred].push(...dataAsArray);
+    } else {
+      obj[pred] = [ obj[pred], ...dataAsArray ];
+    }
+  } else {
+    obj[pred] = data;
+  }
+}
+
+export function addToObjAsReference(obj: Record<string, any>, pred: string, data: string): void {
+  const dataAsNode: ReferenceNodeObject = { '@id': data };
+  addToObj(obj, pred, dataAsNode);
+}
 
 export function getValue<T extends string | boolean | number | JSONObject | JSONArray>(
   fieldValue: ValueObject<T> | T,
@@ -81,12 +99,12 @@ export function convertRdfTypeToJsonldType(obj: Record<string, any>): void {
         const types = temp.map((tempItem): string => tempItem['@id']);
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete obj[key];
-        helper.addToObj(obj, '@type', types);
+        addToObj(obj, '@type', types);
       } else {
         const type = obj[key];
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete obj[key];
-        helper.addToObj(obj, '@type', type);
+        addToObj(obj, '@type', type);
       }
     } else if (obj[key] && typeof obj[key] === 'object') {
       convertRdfTypeToJsonldType(obj[key]);
@@ -214,4 +232,122 @@ function isFunction(node: NodeObject): boolean {
 
 export function isTriplesMap(node: NodeObject): boolean {
   return hasLogicalSource(node) && !isFunction(node);
+}
+
+function isJsonLDReference(obj: any): boolean {
+  return typeof obj === 'object' && '@id' in obj && Object.keys(obj).length === 1;
+}
+
+// May create circular data-structure (probably not common in RML though)
+export function jsonLDGraphToObj(graph: NodeObject[], deleteReplaced = false): NodeObject[] {
+  const graphHasNodeWithoutId = graph.some((node): boolean => !node['@id']);
+  if (graphHasNodeWithoutId) {
+    throw new Error('node without id');
+  }
+
+  const graphById = graph.reduce((object: Record<string, NodeObject>, node): Record<string, NodeObject> => {
+    object[node['@id']!] = node;
+    return object;
+  }, {});
+
+  const replacedIds = [];
+  for (const id of Object.keys(graphById)) {
+    const node = graphById[id];
+    for (const key of Object.keys(node)) {
+      const fieldValue = node[key];
+      if (Array.isArray(fieldValue)) {
+        fieldValue.forEach((value, index): void => {
+          if (isJsonLDReference(value) && (value as ReferenceNodeObject)['@id'] in graphById) {
+            replacedIds.push((value as ReferenceNodeObject)['@id']);
+            (graphById[id][key] as NodeObject[])[index] = graphById[(value as ReferenceNodeObject)['@id']];
+          }
+        });
+      } else if (isJsonLDReference(fieldValue) && (fieldValue as ReferenceNodeObject)['@id'] in graphById) {
+        replacedIds.push((fieldValue as ReferenceNodeObject)['@id']);
+        graphById[id][key] = graphById[(fieldValue as ReferenceNodeObject)['@id']];
+      }
+    }
+  }
+  if (deleteReplaced) {
+    for (const deleteId of replacedIds) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete graphById[deleteId];
+    }
+  }
+  return Object.values(graphById);
+}
+
+export function replaceReferences(graph: NodeObject[]): NodeObject[] {
+  const connectedGraph = jsonLDGraphToObj(graph, true);
+  // Test for circular deps & remove links
+  try {
+    return JSON.parse(JSON.stringify(connectedGraph));
+  } catch {
+    // eslint-disable-next-line no-console
+    console.error('Could not replace, circular dependencies when replacing nodes');
+    return graph;
+  }
+}
+
+function setValueAtPredicate(
+  obj: Record<string, any>,
+  predicate: string,
+  data: any,
+  language?: string,
+  datatype?: ReferenceNodeObject | string,
+): void {
+  if (language !== undefined || datatype !== undefined) {
+    if (obj[predicate]) {
+      const newValue = {
+        '@type': datatype,
+        '@value': data,
+        '@language': language,
+      };
+      if (typeof obj[predicate] === 'object' && obj[predicate]['@value']) {
+        obj[predicate] = [ obj[predicate], newValue ];
+      } else if (Array.isArray(obj[predicate])) {
+        obj[predicate].push(newValue);
+      } else {
+        const previousValue = {
+          '@value': obj[predicate],
+        };
+        obj[predicate] = [ previousValue, newValue ];
+      }
+    } else {
+      obj[predicate] = {
+        '@value': data,
+        '@type': datatype,
+        '@language': language,
+      };
+    }
+  } else if (obj[predicate]) {
+    obj[predicate] = addArray(obj[predicate]);
+    obj[predicate].push(data);
+  } else {
+    obj[predicate] = data;
+  }
+}
+
+export function setObjPredicate(
+  obj: Record<string, any>,
+  predicate: string,
+  dataSet: any,
+  language?: string,
+  datatype?: ReferenceNodeObject | string,
+): void {
+  if (datatype) {
+    datatype = typeof datatype === 'object' ? datatype['@id'] : datatype;
+  }
+  if (datatype === RDF.JSON) {
+    datatype = '@json';
+  }
+
+  if (datatype === '@json') {
+    setValueAtPredicate(obj, predicate, dataSet, language, datatype);
+  } else {
+    dataSet = addArray(dataSet).filter((data): boolean => data !== undefined);
+    for (const data of dataSet) {
+      setValueAtPredicate(obj, predicate, data, language, datatype);
+    }
+  }
 }

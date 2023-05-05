@@ -23,3 +23,26 @@ export function cutArray<T>(arr: OrArray<T>): T {
   }
   return arr as T;
 }
+
+export function intersection<T>(arrOfArr: T[][]): T[] {
+  return arrOfArr.reduce((aArray, bArray): T[] =>
+    aArray.filter((item): boolean => bArray.includes(item)));
+}
+
+export function allCombinationsOfArray(arr: any[][]): string[][] {
+  if (arr.length === 0) {
+    return [];
+  }
+  if (arr.length === 1) {
+    return arr[0].map((item): any[] => [ item ]);
+  }
+  const result = [];
+  const firstElement = arr[0];
+  const allCombinationsOfRest = allCombinationsOfArray(arr.slice(1));
+  for (const combinination of allCombinationsOfRest) {
+    for (const element of firstElement) {
+      result.push([ element, ...combinination ]);
+    }
+  }
+  return result;
+}

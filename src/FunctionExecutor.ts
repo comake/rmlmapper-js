@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { addToObj } from './input-parser/helper';
 import type { SourceParser } from './input-parser/SourceParser';
 import type { MappingProcessor } from './MappingProcessor';
 import { predefinedFunctions } from './PredefinedFunctions';
@@ -12,6 +11,7 @@ import {
   getFunctionNameFromPredicateObjectMap,
   isFnoExecutesPredicate,
   predicateContainsFnoExecutes,
+  addToObj,
 } from './util/ObjectUtil';
 import type {
   FnoFunctionParameter,
