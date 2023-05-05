@@ -90,13 +90,25 @@ export class FunctionExecutor {
   private getParametersFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): FnoFunctionParameter[] {
     const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap) as string;
     if (!isFnoExecutesPredicate(predicate)) {
-      const { [RR.objectMap]: objectMap } = predicateObjectMap;
-      // TODO [>=1.0.0]: add support for object here?
+      const { [RR.object]: object, [RR.objectMap]: objectMap } = predicateObjectMap;
+      if (object) {
+        return this.getParametersFromObject(object, predicate);
+      }
       if (objectMap) {
         return this.getParametersFromObjectMap(objectMap, predicate);
       }
     }
     return [];
+  }
+
+  private getParametersFromObject(object: OrArray<ReferenceNodeObject>, predicate: string): FnoFunctionParameter[] {
+    if (Array.isArray(object)) {
+      const objectMapsFromObject = object.map((objectItem): ObjectMap =>
+        ({ '@type': RR.ObjectMap, [RR.constant]: objectItem }));
+      return this.getParametersFromObjectMap(objectMapsFromObject, predicate);
+    }
+    const objectMapFromObject = { '@type': RR.ObjectMap, [RR.constant]: object };
+    return this.getParametersFromObjectMap(objectMapFromObject, predicate);
   }
 
   private getParametersFromObjectMap(objectMap: OrArray<ObjectMap>, predicate: string): FnoFunctionParameter[] {
@@ -133,7 +145,7 @@ export class FunctionExecutor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
     if (RR.constant in parameter) {
-      return getConstant(parameter[RR.constant]!);
+      return getConstant(parameter[RR.constant]);
     }
     if (RML.reference in parameter) {
       return this.getValueOfReference(parameter[RML.reference]!, index, parameter[RR.datatype]);
@@ -186,7 +198,7 @@ export class FunctionExecutor {
     triplesMap: TriplesMap,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    const processor = topLevelMappingProcessors[triplesMap['@id']];
+    const processor = topLevelMappingProcessors[triplesMap['@id']!];
     if (processor) {
       if (processor.hasProcessed()) {
         return processor.getReturnValue();

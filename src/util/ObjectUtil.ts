@@ -9,9 +9,11 @@ import type {
   PredicateMap,
   PredicateObjectMap,
   ReferenceNodeObject,
+  SubjectMap,
+  TermMap,
   ValueObject,
 } from './Types';
-import { FNO, FNO_HTTPS, RDF, RML, RR, XSD } from './Vocabulary';
+import { FNML, FNO, FNO_HTTPS, RDF, RML, RR, XSD } from './Vocabulary';
 
 export function getValue<T extends string | boolean | number | JSONObject | JSONArray>(
   fieldValue: ValueObject<T> | T,
@@ -92,7 +94,9 @@ export function convertRdfTypeToJsonldType(obj: Record<string, any>): void {
   });
 }
 
-export function getConstant<T extends string | number | boolean>(constant: ValueObject<string | boolean> | string): T {
+export function getConstant<T extends string | number | boolean>(
+  constant: TermMap[typeof RR.constant],
+): T {
   if (typeof constant === 'object') {
     if ('@id' in constant) {
       return constant['@id'] as T;
@@ -113,12 +117,12 @@ export function getConstant<T extends string | number | boolean>(constant: Value
   return constant as T;
 }
 
-export function getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
+function getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
   // TODO [>=1.0.0]: add support for reference and template here
   if (Array.isArray(predicateMap)) {
-    return predicateMap.map((predicateMapItem): string => getConstant<string>(predicateMapItem[RR.constant]!));
+    return predicateMap.map((predicateMapItem): string => getConstant<string>(predicateMapItem[RR.constant]));
   }
-  return getConstant<string>(predicateMap[RR.constant]!);
+  return getConstant<string>(predicateMap[RR.constant]);
 }
 
 export function getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<string> {
@@ -155,10 +159,10 @@ export function getFunctionNameFromObjectMap(objectMap: OrArray<ObjectMap>): str
     throw new Error('Only one function may be specified per PredicateObjectMap');
   }
   if (isArray && objectMap[0][RR.constant]) {
-    return getConstant(objectMap[0][RR.constant]!);
+    return getConstant(objectMap[0][RR.constant]);
   }
   if (!isArray && objectMap[RR.constant]) {
-    return getConstant(objectMap[RR.constant]!);
+    return getConstant(objectMap[RR.constant]);
   }
   throw new Error('Object must be specified through constant');
 }
@@ -180,6 +184,10 @@ export function isFnoExecutesPredicate(predicate: string): boolean {
 
 function hasLogicalSource(node: NodeObject): boolean {
   return RML.logicalSource in node;
+}
+
+export function isFunctionValuedSubjectMap(subjectMap: SubjectMap): boolean {
+  return typeof subjectMap === 'object' && FNML.functionValue in subjectMap;
 }
 
 export function predicateContainsFnoExecutes(predicate: OrArray<string>): boolean {

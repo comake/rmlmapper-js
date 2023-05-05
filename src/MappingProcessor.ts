@@ -15,6 +15,7 @@ import {
   getValue,
   getConstant,
   getPredicateValueFromPredicateObjectMap,
+  isFunctionValuedSubjectMap,
 } from './util/ObjectUtil';
 import type {
   FunctionValue,
@@ -103,22 +104,10 @@ export class MappingProcessor {
   public async processMapping(
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<ParsedMappingResult[]> {
-    const { [RR.subjectMap]: subjectMap } = this.mapping;
     const iteratorNumber = this.sourceParser.getCount();
     const parentPaths = this.getParentPaths();
-
-    if (!subjectMap || Array.isArray(subjectMap)) {
-      throw new Error('Exactly one subjectMap needed');
-    }
-
-    let type;
-    if (subjectMap[RR.class]) {
-      if (Array.isArray(subjectMap[RR.class])) {
-        type = (subjectMap[RR.class] as ReferenceNodeObject[]).map((sm: ReferenceNodeObject): string => sm['@id']);
-      } else {
-        type = (subjectMap[RR.class] as ReferenceNodeObject)['@id'];
-      }
-    }
+    const subjectMap = this.getSubjectMapFromMapping();
+    const classes = this.getNonFunctionClassFromSubjectMap(subjectMap);
     const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
 
     let result = [];
@@ -129,7 +118,7 @@ export class MappingProcessor {
         iteratorNumber,
         parentPaths,
         subjectFunctionValue,
-        type,
+        classes,
       );
     } else if (RR.template in subjectMap) {
       result = await this.processMappingWithTemplate(
@@ -138,7 +127,7 @@ export class MappingProcessor {
         iteratorNumber,
         parentPaths,
         subjectFunctionValue,
-        type,
+        classes,
       );
     } else if (FNML.functionValue in subjectMap) {
       result = await this.processMappingWithFunctionValue(
@@ -147,16 +136,19 @@ export class MappingProcessor {
         iteratorNumber,
         parentPaths,
         subjectFunctionValue,
-        type,
+        classes,
       );
-    } else if (RR.constant in subjectMap || getIdFromNodeObjectIfDefined(subjectMap[RR.termType]) === RR.BlankNode) {
+    } else if (
+      RR.constant in subjectMap ||
+      getIdFromNodeObjectIfDefined(subjectMap[RR.termType]) === RR.BlankNode
+    ) {
       result = await this.processMappingWithConstantOrTermType(
         subjectMap,
         topLevelMappingProcessors,
         iteratorNumber,
         parentPaths,
         subjectFunctionValue,
-        type,
+        classes,
       );
     } else {
       throw new Error('Unsupported subjectmap');
@@ -170,6 +162,23 @@ export class MappingProcessor {
     this.processed = true;
     this.returnValue = result;
     return result;
+  }
+
+  private getSubjectMapFromMapping(): SubjectMap {
+    if (RR.subject in this.mapping) {
+      return {
+        '@type': RR.SubjectMap,
+        [RR.constant]: this.mapping[RR.subject],
+      };
+    }
+    const subjectMap = this.mapping[RR.subjectMap];
+    if (subjectMap) {
+      if (Array.isArray(subjectMap)) {
+        throw new Error('Exactly one subjectMap needed');
+      }
+      return subjectMap;
+    }
+    throw new Error(`No subjectMap supplied for mapping ${this.mapping['@id']}`);
   }
 
   private getParentPaths(): string[] {
@@ -190,6 +199,15 @@ export class MappingProcessor {
       }
       return arr;
     }, []);
+  }
+
+  private getNonFunctionClassFromSubjectMap(subjectMap: SubjectMap): OrArray<string> | undefined {
+    if (subjectMap[RR.class] && !isFunctionValuedSubjectMap(subjectMap)) {
+      if (Array.isArray(subjectMap[RR.class])) {
+        return (subjectMap[RR.class] as ReferenceNodeObject[]).map((sm: ReferenceNodeObject): string => sm['@id']);
+      }
+      return (subjectMap[RR.class] as ReferenceNodeObject)['@id'];
+    }
   }
 
   private async processMappingWithSubjectMap(
@@ -339,7 +357,7 @@ export class MappingProcessor {
       }
       let obj: ParsedMappingResult = {};
       if (RR.constant in subjectMap) {
-        obj['@id'] = getConstant<string>(subjectMap[RR.constant]!);
+        obj['@id'] = getConstant<string>(subjectMap[RR.constant]);
       }
       if (type) {
         obj['@type'] = type;
@@ -371,8 +389,7 @@ export class MappingProcessor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
     if (this.mapping[RR.predicateObjectMap]) {
-      let objectMapArray = this.mapping[RR.predicateObjectMap];
-      objectMapArray = addArray(objectMapArray);
+      const objectMapArray = addArray(this.mapping[RR.predicateObjectMap]);
       for (const mapping of objectMapArray) {
         const predicate = getPredicateValueFromPredicateObjectMap(mapping);
         if (Array.isArray(predicate)) {
@@ -394,26 +411,21 @@ export class MappingProcessor {
     predicate: string,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<void> {
-    let objects: ReferenceNodeObject[] | undefined;
     if (RR.object in mapping) {
       if (Array.isArray(mapping[RR.object])) {
-        objects = mapping[RR.object] as ReferenceNodeObject[];
+        (mapping[RR.object] as ReferenceNodeObject[]).forEach((objectItem): void => {
+          helper.setObjPredicate(obj, predicate, objectItem['@id']);
+        });
       } else {
-        objects = [ mapping[RR.object] as ReferenceNodeObject ];
+        helper.setObjPredicate(obj, predicate, (mapping[RR.object] as ReferenceNodeObject)['@id']);
       }
-    }
-    let objectmaps: ObjectMap[] | undefined;
-    if (RR.objectMap in mapping) {
+    } else if (RR.objectMap in mapping) {
+      let objectmaps: ObjectMap[] | undefined;
       if (Array.isArray(mapping[RR.objectMap])) {
         objectmaps = mapping[RR.objectMap] as ObjectMap[];
       } else {
         objectmaps = [ mapping[RR.objectMap] as ObjectMap ];
       }
-    }
-
-    if (objects) {
-      helper.addToObj(obj, predicate, objects);
-    } else if (objectmaps) {
       await Promise.all(
         objectmaps.map(async(objectmap): Promise<void> => {
           const {
@@ -568,7 +580,7 @@ export class MappingProcessor {
 
   private getValueOfTermMap(index: number, termMap: TermMap): string {
     if (RR.constant in termMap) {
-      return getConstant<string>(termMap[RR.constant]!);
+      return getConstant<string>(termMap[RR.constant]);
     }
     if (RML.reference in termMap) {
       const vals = this.sourceParser.getData(index, getValue<string>(termMap[RML.reference]!));

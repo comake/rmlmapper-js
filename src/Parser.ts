@@ -7,7 +7,6 @@ import * as jsonld from 'jsonld';
 import type { NodeObject } from 'jsonld';
 import replaceHelper, { jsonLDGraphToObj } from './helper/replace';
 import helper from './input-parser/helper';
-import { replaceConstantShortProps } from './mapfile/mapfileParser';
 import type { ParsedMappingResult } from './MappingProcessor';
 import { MappingProcessor } from './MappingProcessor';
 import { addArray } from './util/ArrayUtil';
@@ -52,8 +51,7 @@ export class RmlMapper {
   }
 
   private async processMapping(mapping: NodeObject): Promise<Record<string, jsonld.NodeObject[]>> {
-    const graph = mapping['@graph'];
-    replaceConstantShortProps(graph);
+    const graph = mapping['@graph'] as NodeObject[];
     const connectedGraph = jsonLDGraphToObj(graph) as NodeObject[];
     const output = await this.processTopLevelMappings(connectedGraph);
     return this.mergeJoin(output, connectedGraph);

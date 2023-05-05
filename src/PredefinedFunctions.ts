@@ -119,6 +119,9 @@ export const predefinedFunctions = {
     }
     return Number.parseInt(data[GREL.p_any_e], 10);
   },
+  [GREL.string_length](data: Record<string | number, any>): string[] {
+    return data[GREL.valueParameter].length;
+  },
   [GREL.string_contains](data: Record<string | number, any>): boolean {
     return data[GREL.valueParameter].includes(data[GREL.string_sub]);
   },
