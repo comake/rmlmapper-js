@@ -141,6 +141,8 @@ export const GREL = createNamespace('http://users.ugent.be/~bjdmeest/function/gr
   'p_any_e',
   'string_contains',
   'string_length',
+  'array_length',
+  'math_ceil',
 ]);
 
 export const IDLAB = createNamespace('http://example.com/idlab/function/', [
@@ -155,6 +157,8 @@ export const IDLAB = createNamespace('http://example.com/idlab/function/', [
   'delimiter',
   'listContainsElement',
   'list',
+  'trueCondition',
+  'strBoolean',
 ]);
 
 export const QL = createNamespace('http://semweb.mmlab.be/ns/ql#', [

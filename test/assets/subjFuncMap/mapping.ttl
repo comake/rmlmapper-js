@@ -43,12 +43,4 @@ rr:predicateObjectMap [
                  rr:predicate fno:executes ;
                  rr:objectMap [ rr:constant ex:UUID ]
              ] ;
-             rr:predicateObjectMap [
-                 rr:predicate grel:inputString ;
-                 rr:objectMap [ rml:reference "name" ]
-             ];
-              rr:predicateObjectMap [
-                  rr:predicate grel:inputString ;
-                  rr:objectMap [ rml:reference "age" ]
-              ];
          ] .

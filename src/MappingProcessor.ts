@@ -8,7 +8,7 @@ import { FontoxpathParser } from './input-parser/FontoxpathParser';
 import { JsonParser } from './input-parser/JsonParser';
 import type { SourceParser, SourceParserArgs } from './input-parser/SourceParser';
 import { XmlParser } from './input-parser/XmlParser';
-import { addArray, cutArray, allCombinationsOfArray } from './util/ArrayUtil';
+import { addArray, cutArray } from './util/ArrayUtil';
 import {
   getIdFromNodeObjectIfDefined,
   getValue,
@@ -16,6 +16,7 @@ import {
   getPredicateValueFromPredicateObjectMap,
   isFunctionValuedSubjectMap,
   setObjPredicate,
+  setObjPredicateWithTermType,
 } from './util/ObjectUtil';
 import { getAllOcurrences } from './util/StringUtil';
 import type {
@@ -52,6 +53,24 @@ export interface MappingProcessorArgs {
   source: string;
   mapping: TriplesMap;
   data: NodeObject[];
+}
+
+function allCombinationsOfArray(arr: any[][]): string[][] {
+  if (arr.length === 0) {
+    return [];
+  }
+  if (arr.length === 1) {
+    return arr[0].map((item): any[] => [ item ]);
+  }
+  const result = [];
+  const firstElement = arr[0];
+  const allCombinationsOfRest = allCombinationsOfArray(arr.slice(1));
+  for (const combinination of allCombinationsOfRest) {
+    for (const element of firstElement) {
+      result.push([ element, ...combinination ]);
+    }
+  }
+  return result;
 }
 
 export class MappingProcessor {
@@ -293,7 +312,7 @@ export class MappingProcessor {
             case RR.Literal:
               break;
             default:
-              throw new Error(`Don't know: ${getIdFromNodeObjectIfDefined(subjectMap[RR.termType])}`);
+              throw new Error(`Invalid rr:termType: ${getIdFromNodeObjectIfDefined(subjectMap[RR.termType])}`);
           }
         }
         obj['@id'] = id;
@@ -458,28 +477,14 @@ export class MappingProcessor {
 
           if (template) {
             const templateValue = getValue<string>(template);
-            // We have a template definition
-            const temp = this.calculateTemplate(index, templateValue, termTypeValue);
-            temp.forEach((te: string): void => {
-              let teRef: ReferenceNodeObject | string;
+            const templateResults = this.calculateTemplate(index, templateValue, termTypeValue);
+            templateResults.forEach((result: string): void => {
               if (termTypeValue) {
-                switch (termTypeValue) {
-                  case RR.BlankNode:
-                    teRef = { '@id': `_:${te}` };
-                    break;
-                  case RR.IRI:
-                    teRef = { '@id': te };
-                    break;
-                  case RR.Literal:
-                    teRef = te;
-                    break;
-                  default:
-                    throw new Error(`Don't know: ${termTypeValue}`);
-                }
+                setObjPredicateWithTermType(obj, predicate, result, termTypeValue, languageString, datatype);
               } else {
-                teRef = { '@id': te };
+                const templateReference = { '@id': result };
+                setObjPredicate(obj, predicate, templateReference, languageString, datatype);
               }
-              setObjPredicate(obj, predicate, cutArray(teRef), languageString, datatype);
             });
           } else if (reference) {
             const referenceValue = getValue<string>(reference);
@@ -537,7 +542,11 @@ export class MappingProcessor {
               index,
               topLevelMappingProcessors,
             );
-            setObjPredicate(obj, predicate, result, languageString, datatype);
+            if (termTypeValue) {
+              setObjPredicateWithTermType(obj, predicate, result, termTypeValue, languageString, datatype);
+            } else {
+              setObjPredicate(obj, predicate, result, languageString, datatype);
+            }
           }
         }),
       );
@@ -547,36 +556,26 @@ export class MappingProcessor {
   private calculateTemplate(index: number, template: string, termType?: string): string[] {
     const openBracketIndicies = getAllOcurrences('{', template);
     const closedBracketIndicies = getAllOcurrences('}', template);
-    const words: string[] = [];
-    const toInsert: any[][] = [];
-    const templates: string[] = [];
     if (openBracketIndicies.length === 0 || openBracketIndicies.length !== closedBracketIndicies.length) {
       return [ template ];
     }
-    openBracketIndicies.forEach((beginningValue: number, idx: number): void => {
-      words.push(template.slice(beginningValue + 1, closedBracketIndicies[idx]));
-    });
-    words.forEach((word): void => {
-      const temp = addArray(this.sourceParser.getData(index, word));
-      toInsert.push(temp);
-    });
-    const allCombinations = allCombinationsOfArray(toInsert);
-    allCombinations.forEach((combinination: any, idxA: number): void => {
-      let finTemp = template;
-      combinination.forEach((word: string, idxB: number): void => {
+    const selectorsInTemplate = openBracketIndicies.map((beginningValue: number, idx: number): string =>
+      template.slice(beginningValue + 1, closedBracketIndicies[idx]));
+    const dataToInsert = selectorsInTemplate.map((selector): any[] =>
+      addArray(this.sourceParser.getData(index, selector)));
+    const allDataCombinations = allCombinationsOfArray(dataToInsert);
+    return allDataCombinations.reduce((templates: string[], combinination: any[]): string[] => {
+      const finalTemplate = combinination.reduce((resolvedTemplate: string, word: string, idxB: number): string => {
         if (!termType || termType !== RR.Literal) {
-          allCombinations[idxA][idxB] = toURIComponent(allCombinations[idxA][idxB]);
+          word = toURIComponent(word);
         }
-        finTemp = finTemp.replace(`{${words[idxB]}}`, allCombinations[idxA][idxB]);
-      });
-      if (finTemp.length > 0) {
-        templates.push(finTemp);
+        return resolvedTemplate.replace(`{${selectorsInTemplate[idxB]}}`, word);
+      }, template);
+      if (finalTemplate.length > 0) {
+        templates.push(unescapeCurlyBrackets(finalTemplate));
       }
-    });
-    templates.forEach((thisTemplate: string, idx: number): void => {
-      templates[idx] = unescapeCurlyBrackets(thisTemplate);
-    });
-    return templates;
+      return templates;
+    }, []);
   }
 
   private getValueOfTermMap(index: number, termMap: TermMap): string {

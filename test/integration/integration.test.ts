@@ -1091,6 +1091,67 @@ describe('Parsing', (): void => {
       assert.equal(result[1]['@id'], 'http://example.com/2/Bar');
     });
 
+    it('IRI termType with Function Map.', async(): Promise<void> => {
+      const options = {
+        functions: {
+          'http://myfunc.com/getId'([ str ]: string[]): string {
+            return `http://example.com/${str}`;
+          },
+        },
+      };
+      const result = await parseFileTurtle(
+        './test/assets/iriTermTypeFuncMap/mapping.ttl',
+        [ './test/assets/iriTermTypeFuncMap/input.json' ],
+        './test/assets/iriTermTypeFuncMap/out.json',
+        options,
+      ) as NodeObject[];
+
+      assert.equal(typeof result[0]['http://example.com/namesake'], 'object');
+      assert.equal(typeof result[1]['http://example.com/namesake'], 'object');
+      assert.equal((result[0]['http://example.com/namesake'] as ReferenceNodeObject)['@id'], 'http://example.com/John');
+      assert.equal((result[1]['http://example.com/namesake'] as ReferenceNodeObject)['@id'], 'http://example.com/Jane');
+    });
+
+    it('blank node termType with Function Map.', async(): Promise<void> => {
+      const options = {
+        functions: {
+          'http://myfunc.com/getId'([ str ]: string[]): string {
+            return `special${str}`;
+          },
+        },
+      };
+      const result = await parseFileTurtle(
+        './test/assets/blankNodeTermTypeFuncMap/mapping.ttl',
+        [ './test/assets/blankNodeTermTypeFuncMap/input.json' ],
+        './test/assets/blankNodeTermTypeFuncMap/out.json',
+        options,
+      ) as NodeObject[];
+
+      assert.equal(typeof result[0]['http://example.com/namesake'], 'object');
+      assert.equal(typeof result[1]['http://example.com/namesake'], 'object');
+      assert.equal((result[0]['http://example.com/namesake'] as ReferenceNodeObject)['@id'], '_:specialJohn');
+      assert.equal((result[1]['http://example.com/namesake'] as ReferenceNodeObject)['@id'], '_:specialJane');
+    });
+
+    it('literal termType with Function Map.', async(): Promise<void> => {
+      const options = {
+        functions: {
+          'http://myfunc.com/getId'([ str ]: string[]): string {
+            return `Parent: ${str}`;
+          },
+        },
+      };
+      const result = await parseFileTurtle(
+        './test/assets/literalTermTypeFuncMap/mapping.ttl',
+        [ './test/assets/literalTermTypeFuncMap/input.json' ],
+        './test/assets/literalTermTypeFuncMap/out.json',
+        options,
+      ) as NodeObject[];
+
+      assert.equal(result[0]['http://example.com/namesake'], 'Parent: John');
+      assert.equal(result[1]['http://example.com/namesake'], 'Parent: Jane');
+    });
+
     it('iriReference.', async(): Promise<void> => {
       const result = await parseFileTurtle(
         './test/assets/iriReference/mapping.ttl',

@@ -351,3 +351,36 @@ export function setObjPredicate(
     }
   }
 }
+
+export function setObjPredicateWithTermType(
+  obj: Record<string, any>,
+  predicate: string,
+  dataSet: any,
+  termType: string,
+  language?: string,
+  datatype?: ReferenceNodeObject | string,
+): void {
+  let result: OrArray<ReferenceNodeObject | string>;
+  switch (termType) {
+    case RR.BlankNode:
+      if (Array.isArray(dataSet)) {
+        result = dataSet.map((item): ReferenceNodeObject => ({ '@id': `_:${item}` }));
+      } else {
+        result = { '@id': `_:${dataSet}` };
+      }
+      break;
+    case RR.IRI:
+      if (Array.isArray(dataSet)) {
+        result = dataSet.map((item): ReferenceNodeObject => ({ '@id': item }));
+      } else {
+        result = { '@id': dataSet };
+      }
+      break;
+    case RR.Literal:
+      result = dataSet;
+      break;
+    default:
+      throw new Error(`Invalid rr:termType: ${termType}`);
+  }
+  setObjPredicate(obj, predicate, result, language, datatype);
+}

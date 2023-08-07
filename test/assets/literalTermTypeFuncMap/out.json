@@ -1,0 +1,12 @@
+[
+  {
+    "@type": "https://schema.org/Person",
+    "http://example.com/namesake": "Parent: John",
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23Mapping_1"
+  },
+  {
+    "@type": "https://schema.org/Person",
+    "http://example.com/namesake": "Parent: Jane",
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23Mapping_2"
+  }
+]
