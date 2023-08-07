@@ -13,6 +13,10 @@ function toBoolean(val: string | boolean): boolean {
 }
 
 export const predefinedFunctions = {
+  [GREL.array_length](data: Record<string | number, any>): string[] {
+    const arr = Array.isArray(data[GREL.p_array_a]) ? data[GREL.p_array_a] : [ data[GREL.p_array_a] ];
+    return arr.length;
+  },
   [GREL.array_join](data: Record<string | number, any>): string {
     const separator = data[GREL.p_string_sep] as string | undefined;
     const parts = Array.isArray(data[GREL.p_array_a])
@@ -23,7 +27,7 @@ export const predefinedFunctions = {
       .filter((part): boolean => !(Array.isArray(part) && part.length === 0))
       .join(separator ?? '');
   },
-  [GREL.controls_if](data: Record<string | number, any>): boolean | undefined {
+  [GREL.controls_if](data: Record<string | number, any>): any | undefined {
     if (
       (typeof data[GREL.bool_b] === 'string' && data[GREL.bool_b] === 'true') ||
       (typeof data[GREL.bool_b] === 'boolean' && data[GREL.bool_b])
@@ -131,6 +135,9 @@ export const predefinedFunctions = {
   [GREL.math_min](data: Record<string | number, any>): number {
     return Math.min(Number.parseInt(data[GREL.p_dec_n], 10), Number.parseInt(data[GREL.param_n2], 10));
   },
+  [GREL.math_ceil](data: Record<string | number, any>): number {
+    return Math.ceil(Number.parseInt(data[GREL.p_dec_n], 10));
+  },
   [IDLAB.equal](data: Record<string | number, any>): boolean {
     return data[GREL.valueParameter] === data[GREL.valueParameter2];
   },
@@ -157,5 +164,14 @@ export const predefinedFunctions = {
   },
   [IDLAB.listContainsElement](data: Record<string | number, any>): boolean {
     return data[IDLAB.list].includes(data[IDLAB.str]);
+  },
+  [IDLAB.trueCondition](data: Record<string | number, any>): any {
+    if (
+      (typeof data[IDLAB.strBoolean] === 'string' && data[IDLAB.strBoolean] === 'true') ||
+      (typeof data[IDLAB.strBoolean] === 'boolean' && data[IDLAB.strBoolean])
+    ) {
+      return data[IDLAB.str];
+    }
+    return undefined;
   },
 };
