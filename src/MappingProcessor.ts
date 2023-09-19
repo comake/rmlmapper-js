@@ -13,14 +13,14 @@ import {
   getIdFromNodeObjectIfDefined,
   getValue,
   getConstant,
-  getPredicateValueFromPredicateObjectMap,
   isFunctionValuedSubjectMap,
   setObjPredicate,
   setObjPredicateWithTermType,
+  calculateTemplate,
+  getValueOfTermMap,
+  getPredicateValueFromPredicateObjectMap,
 } from './util/ObjectUtil';
-import { getAllOcurrences } from './util/StringUtil';
 import type {
-  FunctionValue,
   FunctionValuedClass,
   JoinCondition,
   ObjectMap,
@@ -29,10 +29,8 @@ import type {
   ProcessOptions,
   ReferenceNodeObject,
   SubjectMap,
-  TermMap,
   TriplesMap,
 } from './util/Types';
-import { toURIComponent, unescapeCurlyBrackets } from './util/UriUtil';
 import { FNML, QL, RDF, RML, RR } from './util/Vocabulary';
 
 export interface ParsedParentTriplesMap {
@@ -53,24 +51,6 @@ export interface MappingProcessorArgs {
   source: string;
   mapping: TriplesMap;
   data: NodeObject[];
-}
-
-function allCombinationsOfArray(arr: any[][]): string[][] {
-  if (arr.length === 0) {
-    return [];
-  }
-  if (arr.length === 1) {
-    return arr[0].map((item): any[] => [ item ]);
-  }
-  const result = [];
-  const firstElement = arr[0];
-  const allCombinationsOfRest = allCombinationsOfArray(arr.slice(1));
-  for (const combinination of allCombinationsOfRest) {
-    for (const element of firstElement) {
-      result.push([ element, ...combinination ]);
-    }
-  }
-  return result;
 }
 
 export class MappingProcessor {
@@ -128,8 +108,6 @@ export class MappingProcessor {
     const parentPaths = this.getParentPaths();
     const subjectMap = this.getSubjectMapFromMapping();
     const classes = this.getNonFunctionClassFromSubjectMap(subjectMap);
-    const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
-
     let result = [];
     if (RML.reference in subjectMap) {
       result = await this.processMappingWithSubjectMap(
@@ -137,7 +115,6 @@ export class MappingProcessor {
         topLevelMappingProcessors,
         iteratorNumber,
         parentPaths,
-        subjectFunctionValue,
         classes,
       );
     } else if (RR.template in subjectMap) {
@@ -146,7 +123,6 @@ export class MappingProcessor {
         topLevelMappingProcessors,
         iteratorNumber,
         parentPaths,
-        subjectFunctionValue,
         classes,
       );
     } else if (FNML.functionValue in subjectMap) {
@@ -155,7 +131,6 @@ export class MappingProcessor {
         topLevelMappingProcessors,
         iteratorNumber,
         parentPaths,
-        subjectFunctionValue,
         classes,
       );
     } else if (
@@ -167,7 +142,6 @@ export class MappingProcessor {
         topLevelMappingProcessors,
         iteratorNumber,
         parentPaths,
-        subjectFunctionValue,
         classes,
       );
     } else {
@@ -235,9 +209,9 @@ export class MappingProcessor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
     iteratorNumber: number,
     parentPaths: string[],
-    subjectFunctionValue?: FunctionValue,
     type?: OrArray<string>,
   ): Promise<any[]> {
+    const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
     const results: any[] = [];
     for (let i = 0; i < iteratorNumber; i++) {
       if (subjectFunctionValue) {
@@ -276,9 +250,9 @@ export class MappingProcessor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
     iteratorNumber: number,
     parentPaths: string[],
-    subjectFunctionValue?: FunctionValue,
     type?: OrArray<string>,
   ): Promise<any[]> {
+    const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
     const results: any[] = [];
     for (let i = 0; i < iteratorNumber; i++) {
       if (subjectFunctionValue) {
@@ -289,7 +263,8 @@ export class MappingProcessor {
         );
       }
       let obj: ParsedMappingResult = {};
-      const ids = this.calculateTemplate(i, getValue<string>(subjectMap[RR.template]!));
+      const template = getValue<string>(subjectMap[RR.template]!);
+      const ids = calculateTemplate(template, i, this.sourceParser);
       for (let id of ids) {
         if (subjectMap[RR.termType]) {
           const termType = getIdFromNodeObjectIfDefined(subjectMap[RR.termType]);
@@ -335,7 +310,6 @@ export class MappingProcessor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
     iteratorNumber: number,
     parentPaths: string[],
-    subjectFunctionValue?: FunctionValue,
     type?: OrArray<string>,
   ): Promise<any[]> {
     const results: any[] = [];
@@ -362,9 +336,9 @@ export class MappingProcessor {
     topLevelMappingProcessors: Record<string, MappingProcessor>,
     iteratorNumber: number,
     parentPaths: string[],
-    subjectFunctionValue?: FunctionValue,
     type?: OrArray<string>,
   ): Promise<any[]> {
+    const subjectFunctionValue = (subjectMap[RR.class] as FunctionValuedClass)?.[FNML.functionValue];
     const results: any[] = [];
     // BlankNode with no template or id
     for (let i = 0; i < iteratorNumber; i++) {
@@ -411,7 +385,13 @@ export class MappingProcessor {
     if (this.mapping[RR.predicateObjectMap]) {
       const objectMapArray = addArray(this.mapping[RR.predicateObjectMap]);
       for (const mapping of objectMapArray) {
-        const predicate = getPredicateValueFromPredicateObjectMap(mapping);
+        const predicate = await getPredicateValueFromPredicateObjectMap(
+          mapping,
+          index,
+          topLevelMappingProcessors,
+          this.sourceParser,
+          this.functionExecutor,
+        );
         if (Array.isArray(predicate)) {
           for (const predicateItem of predicate) {
             await this.handleSingleMapping(index, obj, mapping, predicateItem, topLevelMappingProcessors);
@@ -463,7 +443,13 @@ export class MappingProcessor {
 
           let languageString: string | undefined;
           if (languageMap) {
-            languageString = this.getValueOfTermMap(index, languageMap);
+            languageString = await getValueOfTermMap(
+              languageMap,
+              index,
+              this.sourceParser,
+              topLevelMappingProcessors,
+              this.functionExecutor,
+            );
           } else if (language) {
             languageString = getValue<string>(language);
           }
@@ -477,7 +463,12 @@ export class MappingProcessor {
 
           if (template) {
             const templateValue = getValue<string>(template);
-            const templateResults = this.calculateTemplate(index, templateValue, termTypeValue);
+            const templateResults = calculateTemplate(
+              templateValue,
+              index,
+              this.sourceParser,
+              termTypeValue,
+            );
             templateResults.forEach((result: string): void => {
               if (termTypeValue) {
                 setObjPredicateWithTermType(obj, predicate, result, termTypeValue, languageString, datatype);
@@ -551,45 +542,5 @@ export class MappingProcessor {
         }),
       );
     }
-  }
-
-  private calculateTemplate(index: number, template: string, termType?: string): string[] {
-    const openBracketIndicies = getAllOcurrences('{', template);
-    const closedBracketIndicies = getAllOcurrences('}', template);
-    if (openBracketIndicies.length === 0 || openBracketIndicies.length !== closedBracketIndicies.length) {
-      return [ template ];
-    }
-    const selectorsInTemplate = openBracketIndicies.map((beginningValue: number, idx: number): string =>
-      template.slice(beginningValue + 1, closedBracketIndicies[idx]));
-    const dataToInsert = selectorsInTemplate.map((selector): any[] =>
-      addArray(this.sourceParser.getData(index, selector)));
-    const allDataCombinations = allCombinationsOfArray(dataToInsert);
-    return allDataCombinations.reduce((templates: string[], combinination: any[]): string[] => {
-      const finalTemplate = combinination.reduce((resolvedTemplate: string, word: string, idxB: number): string => {
-        if (!termType || termType !== RR.Literal) {
-          word = toURIComponent(word);
-        }
-        return resolvedTemplate.replace(`{${selectorsInTemplate[idxB]}}`, word);
-      }, template);
-      if (finalTemplate.length > 0) {
-        templates.push(unescapeCurlyBrackets(finalTemplate));
-      }
-      return templates;
-    }, []);
-  }
-
-  private getValueOfTermMap(index: number, termMap: TermMap): string {
-    if (RR.constant in termMap) {
-      return getConstant<string>(termMap[RR.constant]);
-    }
-    if (RML.reference in termMap) {
-      const vals = this.sourceParser.getData(index, getValue<string>(termMap[RML.reference]!));
-      return addArray(vals)[0];
-    }
-    if (RR.template in termMap) {
-      const temp = this.calculateTemplate(index, getValue<string>(termMap[RR.template]!));
-      return addArray(temp)[0];
-    }
-    throw new Error('TermMap has neither constant, reference or template');
   }
 }

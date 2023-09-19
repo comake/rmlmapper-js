@@ -48,16 +48,34 @@ export class FunctionExecutor {
     index: number,
     topLevelMappingProcessors: Record<string, MappingProcessor>,
   ): Promise<any> {
-    const functionName = this.getFunctionName(functionValue[RR.predicateObjectMap]);
-    const parameters = this.getFunctionParameters(functionValue[RR.predicateObjectMap]);
+    const functionName = await this.getFunctionName(
+      functionValue[RR.predicateObjectMap],
+      index,
+      topLevelMappingProcessors,
+    );
+    const parameters = await this.getFunctionParameters(
+      functionValue[RR.predicateObjectMap],
+      index,
+      topLevelMappingProcessors,
+    );
     const params = await this.calculateFunctionParams(parameters, index, topLevelMappingProcessors);
     return await this.executeFunction(functionName, params);
   }
 
-  private getFunctionName(predicateObjectMapField: OrArray<Record<string, any>>): string {
+  private async getFunctionName(
+    predicateObjectMapField: OrArray<Record<string, any>>,
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<string> {
     const predicateObjectMaps = addArray(predicateObjectMapField) as PredicateObjectMap[];
     for (const predicateObjectMap of predicateObjectMaps) {
-      const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap);
+      const predicate = await getPredicateValueFromPredicateObjectMap(
+        predicateObjectMap,
+        index,
+        topLevelMappingProcessors,
+        this.parser,
+        this,
+      );
       if (predicateContainsFnoExecutes(predicate)) {
         const functionName = getFunctionNameFromPredicateObjectMap(predicateObjectMap);
         if (functionName) {
@@ -68,27 +86,46 @@ export class FunctionExecutor {
     throw new Error('Failed to find function name in predicatePbjectMap');
   }
 
-  private getFunctionParameters(predicateObjectMapField: OrArray<PredicateObjectMap>): FnoFunctionParameter[] {
+  private async getFunctionParameters(
+    predicateObjectMapField: OrArray<PredicateObjectMap>,
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<FnoFunctionParameter[]> {
     if (Array.isArray(predicateObjectMapField)) {
-      return this.getParametersFromPredicateObjectMaps(predicateObjectMapField);
+      return await this.getParametersFromPredicateObjectMaps(predicateObjectMapField, index, topLevelMappingProcessors);
     }
-    return this.getParametersFromPredicateObjectMap(predicateObjectMapField);
+    return await this.getParametersFromPredicateObjectMap(predicateObjectMapField, index, topLevelMappingProcessors);
   }
 
-  private getParametersFromPredicateObjectMaps(
+  private async getParametersFromPredicateObjectMaps(
     predicateObjectMaps: PredicateObjectMap[],
-  ): FnoFunctionParameter[] {
-    return predicateObjectMaps.reduce((
-      arr: FnoFunctionParameter[],
-      predicateObjectMap: PredicateObjectMap,
-    ): FnoFunctionParameter[] => {
-      const parameters = this.getParametersFromPredicateObjectMap(predicateObjectMap);
-      return [ ...arr, ...parameters ];
-    }, []);
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<FnoFunctionParameter[]> {
+    let parameters: FnoFunctionParameter[] = [];
+    for (const predicateObjectMap of predicateObjectMaps) {
+      const thisMapParameters = await this.getParametersFromPredicateObjectMap(
+        predicateObjectMap,
+        index,
+        topLevelMappingProcessors,
+      );
+      parameters = [ ...parameters, ...thisMapParameters ];
+    }
+    return parameters;
   }
 
-  private getParametersFromPredicateObjectMap(predicateObjectMap: PredicateObjectMap): FnoFunctionParameter[] {
-    const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap) as string;
+  private async getParametersFromPredicateObjectMap(
+    predicateObjectMap: PredicateObjectMap,
+    index: number,
+    topLevelMappingProcessors: Record<string, MappingProcessor>,
+  ): Promise<FnoFunctionParameter[]> {
+    const predicate = await getPredicateValueFromPredicateObjectMap(
+      predicateObjectMap,
+      index,
+      topLevelMappingProcessors,
+      this.parser,
+      this,
+    ) as string;
     if (!isFnoExecutesPredicate(predicate)) {
       const { [RR.object]: object, [RR.objectMap]: objectMap } = predicateObjectMap;
       if (object) {
