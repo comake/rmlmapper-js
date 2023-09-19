@@ -76,6 +76,7 @@ export class FunctionExecutor {
         this.parser,
         this,
       );
+      console.log(predicate);
       if (predicateContainsFnoExecutes(predicate)) {
         const functionName = getFunctionNameFromPredicateObjectMap(predicateObjectMap);
         if (functionName) {

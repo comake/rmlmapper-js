@@ -144,7 +144,10 @@ function getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<str
   if (Array.isArray(predicate)) {
     return predicate.map((predicateItem: ReferenceNodeObject): string => predicateItem['@id']);
   }
-  return predicate['@id'];
+  if (typeof predicate === 'object') {
+    return predicate['@id'];
+  }
+  return predicate;
 }
 
 function getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>): string {
@@ -406,22 +409,20 @@ export async function getValueOfTermMap(
   sourceParser: SourceParser<any>,
   topLevelMappingProcessors: Record<string, MappingProcessor>,
   functionExecutor: FunctionExecutor,
-): Promise<string> {
+): Promise<OrArray<string>> {
   if (RR.constant in termMap) {
     return getConstant<string>(termMap[RR.constant]);
   }
   if (RML.reference in termMap) {
-    const vals = sourceParser.getData(index, getValue<string>(termMap[RML.reference]!));
-    return addArray(vals)[0];
+    return sourceParser.getData(index, getValue<string>(termMap[RML.reference]!));
   }
   if (RR.template in termMap) {
     const template = getValue<string>(termMap[RR.template]!);
-    const hydratedTemplate = calculateTemplate(
+    return calculateTemplate(
       template,
       index,
       sourceParser,
     );
-    return addArray(hydratedTemplate)[0];
   }
   if (FNML.functionValue in termMap) {
     return await functionExecutor.executeFunctionFromValue(

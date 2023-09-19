@@ -483,6 +483,40 @@ describe('Parsing', (): void => {
       assert.equal((result[6]['http://mytestprefix.org/requires'] as NodeObject)['@id'], '_:http%3A%2F%2Fexample.test%2F%23REQmapping_3');
     });
 
+    it('Reference valued predicate mapping.', async(): Promise<void> => {
+      const result = await parseFileTurtle(
+        './test/assets/referencePredicateMapping/mapping.ttl',
+        [ './test/assets/referencePredicateMapping/input.json' ],
+        './test/assets/referencePredicateMapping/out.json',
+        {},
+      ) as NodeObject[];
+      assert.equal(result[0]['https://example.com/3'], true);
+      assert.equal(result[0]['https://example.com/4'], true);
+      assert.equal(result[0]['https://example.com/5'], true);
+    });
+
+    it('Template valued predicate mapping.', async(): Promise<void> => {
+      const result = await parseFileTurtle(
+        './test/assets/templatePredicateMapping/mapping.ttl',
+        [ './test/assets/templatePredicateMapping/input.json' ],
+        './test/assets/templatePredicateMapping/out.json',
+        {},
+      ) as NodeObject[];
+      assert.equal(result[0]['https://example.com/3'], true);
+      assert.equal(result[0]['https://example.com/4'], true);
+      assert.equal(result[0]['https://example.com/5'], true);
+    });
+
+    it('function valued predicate mapping.', async(): Promise<void> => {
+      const result = await parseFileTurtle(
+        './test/assets/functionPredicateMapping/mapping.ttl',
+        [ './test/assets/functionPredicateMapping/input.json' ],
+        './test/assets/functionPredicateMapping/out.json',
+        {},
+      ) as NodeObject[];
+      assert.equal(result[0]['https://example.com/12'], true);
+    });
+
     // TESTS FOR XML
 
     it('Basic straight mapping XML.', async(): Promise<void> => {

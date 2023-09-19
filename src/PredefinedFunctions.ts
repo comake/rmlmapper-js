@@ -163,7 +163,7 @@ export const predefinedFunctions = {
       data[IDLAB.str] as string,
       data[IDLAB.otherStr] as string,
     ]
-      .filter((str): boolean => typeof str === 'string' && str.length > 0)
+      .filter((str): boolean => typeof str !== 'object' && (typeof str !== 'string' || str.length > 0))
       .join(data[IDLAB.delimiter] as string ?? '');
   },
   [IDLAB.listContainsElement](data: Record<string | number, any>): boolean {

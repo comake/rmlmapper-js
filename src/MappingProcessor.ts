@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/expiring-todo-comments */
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { NodeObject } from 'jsonld';
-import tags from 'language-tags';
+import tags, { languages } from 'language-tags';
 import { FunctionExecutor } from './FunctionExecutor';
 import { CsvParser } from './input-parser/CsvParser';
 import { FontoxpathParser } from './input-parser/FontoxpathParser';
@@ -443,13 +443,18 @@ export class MappingProcessor {
 
           let languageString: string | undefined;
           if (languageMap) {
-            languageString = await getValueOfTermMap(
+            const languageMapResult = await getValueOfTermMap(
               languageMap,
               index,
               this.sourceParser,
               topLevelMappingProcessors,
               this.functionExecutor,
             );
+            if (Array.isArray(languageMapResult)) {
+              languageString = languageMapResult[0];
+            } else {
+              languageString = languageMapResult;
+            }
           } else if (language) {
             languageString = getValue<string>(language);
           }

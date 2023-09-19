@@ -1,0 +1,10 @@
+[
+  {
+    "@type": "https://schema.org/Person",
+    "https://schema.org/name": "Tom A.",
+    "https://example.com/3": true,
+    "https://example.com/4": true,
+    "https://example.com/5": true,
+    "@id": "_:http%3A%2F%2Fexample.test%2F%23Mapping_1"
+  }
+]
