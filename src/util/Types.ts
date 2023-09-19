@@ -54,24 +54,21 @@ export interface TermMap extends NodeObject {
   [RML.reference]?: ValueObject<string> | string;
   [RR.template]?: ValueObject<string> | string;
   [RR.termType]?: ReferenceNodeObject;
-  [RR.datatype]?: ReferenceNodeObject;
+  [FNML.functionValue]?: FunctionValue;
 }
 
 export interface ObjectMap extends TermMap {
   ['@type']: typeof RR.ObjectMap;
-  [RR.constant]?: ValueObject<string | boolean | number> | string | ReferenceNodeObject;
-  [FNML.functionValue]?: FunctionValue;
   [RR.parentTriplesMap]?: TriplesMap;
   [RR.joinCondition]?: JoinCondition;
   [RML.languageMap]?: TermMap;
   [RR.language]?: string | ValueObject<string>;
+  [RR.datatype]?: ReferenceNodeObject;
 }
 
 export interface SubjectMap extends TermMap {
   ['@type']: typeof RR.SubjectMap;
-  [RR.constant]?: ReferenceNodeObject;
   [RR.class]?: OrArray<ReferenceNodeObject> | FunctionValuedClass;
-  [FNML.functionValue]?: FunctionValue;
 }
 
 export interface FunctionValuedClass extends NodeObject {
@@ -80,7 +77,6 @@ export interface FunctionValuedClass extends NodeObject {
 
 export interface PredicateMap extends TermMap {
   ['@type']: typeof RR.PredicateMap;
-  [RR.constant]?: ReferenceNodeObject;
 }
 
 export interface PredicateObjectMap extends NodeObject {

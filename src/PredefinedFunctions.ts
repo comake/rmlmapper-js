@@ -109,7 +109,11 @@ export const predefinedFunctions = {
     return data[GREL.p_array_a].slice(from, to);
   },
   [GREL.string_split](data: Record<string | number, any>): string[] {
-    return data[GREL.valueParameter].split(data[GREL.p_string_sep]);
+    const value = data[GREL.valueParameter];
+    if (Array.isArray(value) && value.length === 0) {
+      return [];
+    }
+    return value.split(data[GREL.p_string_sep]);
   },
   [GREL.string_toString](data: Record<string | number, any>): string {
     if (typeof data[GREL.p_any_e] === 'object') {
@@ -159,7 +163,7 @@ export const predefinedFunctions = {
       data[IDLAB.str] as string,
       data[IDLAB.otherStr] as string,
     ]
-      .filter((str): boolean => typeof str === 'string' && str.length > 0)
+      .filter((str): boolean => typeof str !== 'object' && (typeof str !== 'string' || str.length > 0))
       .join(data[IDLAB.delimiter] as string ?? '');
   },
   [IDLAB.listContainsElement](data: Record<string | number, any>): boolean {

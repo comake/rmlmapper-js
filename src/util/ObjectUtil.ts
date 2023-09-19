@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { NodeObject } from 'jsonld';
+import type { FunctionExecutor } from '../FunctionExecutor';
+import type { SourceParser } from '../input-parser/SourceParser';
+import type { MappingProcessor } from '../MappingProcessor';
 import { addArray } from './ArrayUtil';
+import { getAllOcurrences } from './StringUtil';
 import type {
   JSONArray,
   JSONObject,
@@ -13,6 +17,7 @@ import type {
   TermMap,
   ValueObject,
 } from './Types';
+import { toURIComponent, unescapeCurlyBrackets } from './UriUtil';
 import { FNML, FNO, FNO_HTTPS, RDF, RML, RR, XSD } from './Vocabulary';
 
 export function addToObj(obj: Record<string, any>, pred: string, data: any): void {
@@ -135,33 +140,17 @@ export function getConstant<T extends string | number | boolean>(
   return constant as T;
 }
 
-function getPredicateValueFromPredicateMap(predicateMap: OrArray<PredicateMap>): OrArray<string> {
-  // TODO [>=1.0.0]: add support for reference and template here
-  if (Array.isArray(predicateMap)) {
-    return predicateMap.map((predicateMapItem): string => getConstant<string>(predicateMapItem[RR.constant]));
-  }
-  return getConstant<string>(predicateMap[RR.constant]);
-}
-
-export function getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<string> {
+function getPredicateValue(predicate: OrArray<ReferenceNodeObject>): OrArray<string> {
   if (Array.isArray(predicate)) {
     return predicate.map((predicateItem: ReferenceNodeObject): string => predicateItem['@id']);
   }
-  return predicate['@id'];
+  if (typeof predicate === 'object') {
+    return predicate['@id'];
+  }
+  return predicate;
 }
 
-export function getPredicateValueFromPredicateObjectMap(mapping: PredicateObjectMap): OrArray<string> {
-  const { [RR.predicate]: predicate, [RR.predicateMap]: predicateMap } = mapping;
-  if (predicate) {
-    return getPredicateValue(predicate);
-  }
-  if (predicateMap) {
-    return getPredicateValueFromPredicateMap(predicateMap);
-  }
-  throw new Error('No predicate specified in PredicateObjectMap');
-}
-
-export function getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>): string {
+function getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>): string {
   if (Array.isArray(object)) {
     if (object.length === 1) {
       return getIdFromNodeObjectIfDefined(object[0])!;
@@ -171,7 +160,7 @@ export function getFunctionNameFromObject(object: OrArray<ReferenceNodeObject>):
   return getIdFromNodeObjectIfDefined(object)!;
 }
 
-export function getFunctionNameFromObjectMap(objectMap: OrArray<ObjectMap>): string {
+function getFunctionNameFromObjectMap(objectMap: OrArray<ObjectMap>): string {
   const isArray = Array.isArray(objectMap);
   if (isArray && objectMap.length > 1) {
     throw new Error('Only one function may be specified per PredicateObjectMap');
@@ -213,25 +202,6 @@ export function predicateContainsFnoExecutes(predicate: OrArray<string>): boolea
     return predicate.some((predicateItem): boolean => isFnoExecutesPredicate(predicateItem));
   }
   return isFnoExecutesPredicate(predicate);
-}
-
-function isFunction(node: NodeObject): boolean {
-  if (RR.predicateObjectMap in node) {
-    const predicateObjectMaps = addArray<PredicateObjectMap>(
-      node[RR.predicateObjectMap] as OrArray<PredicateObjectMap>,
-    );
-    for (const predicateObjectMap of predicateObjectMaps) {
-      const predicate = getPredicateValueFromPredicateObjectMap(predicateObjectMap);
-      if (predicateContainsFnoExecutes(predicate)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-export function isTriplesMap(node: NodeObject): boolean {
-  return hasLogicalSource(node) && !isFunction(node);
 }
 
 function isJsonLDReference(obj: any): boolean {
@@ -383,4 +353,143 @@ export function setObjPredicateWithTermType(
       throw new Error(`Invalid rr:termType: ${termType}`);
   }
   setObjPredicate(obj, predicate, result, language, datatype);
+}
+
+export function allCombinationsOfArray(arr: any[][]): string[][] {
+  if (arr.length === 0) {
+    return [];
+  }
+  if (arr.length === 1) {
+    return arr[0].map((item): any[] => [ item ]);
+  }
+  const result = [];
+  const firstElement = arr[0];
+  const allCombinationsOfRest = allCombinationsOfArray(arr.slice(1));
+  for (const combinination of allCombinationsOfRest) {
+    for (const element of firstElement) {
+      result.push([ element, ...combinination ]);
+    }
+  }
+  return result;
+}
+
+export function calculateTemplate(
+  template: string,
+  index: number,
+  sourceParser: SourceParser<any>,
+  termType?: string,
+): string[] {
+  const openBracketIndicies = getAllOcurrences('{', template);
+  const closedBracketIndicies = getAllOcurrences('}', template);
+  if (openBracketIndicies.length === 0 || openBracketIndicies.length !== closedBracketIndicies.length) {
+    return [ template ];
+  }
+  const selectorsInTemplate = openBracketIndicies.map((beginningValue: number, idx: number): string =>
+    template.slice(beginningValue + 1, closedBracketIndicies[idx]));
+  const dataToInsert = selectorsInTemplate.map((selector): any[] =>
+    addArray(sourceParser.getData(index, selector)));
+  const allDataCombinations = allCombinationsOfArray(dataToInsert);
+  return allDataCombinations.reduce((templates: string[], combinination: any[]): string[] => {
+    const finalTemplate = combinination.reduce((resolvedTemplate: string, word: string, idxB: number): string => {
+      if (!termType || termType !== RR.Literal) {
+        word = toURIComponent(word);
+      }
+      return resolvedTemplate.replace(`{${selectorsInTemplate[idxB]}}`, word);
+    }, template);
+    if (finalTemplate.length > 0) {
+      templates.push(unescapeCurlyBrackets(finalTemplate));
+    }
+    return templates;
+  }, []);
+}
+
+export async function getValueOfTermMap(
+  termMap: TermMap,
+  index: number,
+  sourceParser: SourceParser<any>,
+  topLevelMappingProcessors: Record<string, MappingProcessor>,
+  functionExecutor: FunctionExecutor,
+): Promise<OrArray<string>> {
+  if (RR.constant in termMap) {
+    return getConstant<string>(termMap[RR.constant]);
+  }
+  if (RML.reference in termMap) {
+    return sourceParser.getData(index, getValue<string>(termMap[RML.reference]!));
+  }
+  if (RR.template in termMap) {
+    const template = getValue<string>(termMap[RR.template]!);
+    return calculateTemplate(
+      template,
+      index,
+      sourceParser,
+    );
+  }
+  if (FNML.functionValue in termMap) {
+    return await functionExecutor.executeFunctionFromValue(
+      termMap[FNML.functionValue]!,
+      index,
+      topLevelMappingProcessors,
+    );
+  }
+  throw new Error('TermMap has neither constant, reference or template');
+}
+
+async function getPredicateValueFromPredicateMap(
+  predicateMap: OrArray<PredicateMap>,
+  index: number,
+  topLevelMappingProcessors: Record<string, MappingProcessor>,
+  sourceParser: SourceParser<any>,
+  functionExecutor: FunctionExecutor,
+): Promise<OrArray<string>> {
+  if (Array.isArray(predicateMap)) {
+    const predicateArrays = await Promise.all(
+      predicateMap.map((predicateMapItem): Promise<OrArray<string>> =>
+        getValueOfTermMap(
+          predicateMapItem,
+          index,
+          sourceParser,
+          topLevelMappingProcessors,
+          functionExecutor,
+        )),
+    );
+    return predicateArrays.flat();
+  }
+  return await getValueOfTermMap(
+    predicateMap,
+    index,
+    sourceParser,
+    topLevelMappingProcessors,
+    functionExecutor,
+  );
+}
+
+export async function getPredicateValueFromPredicateObjectMap(
+  mapping: PredicateObjectMap,
+  index: number,
+  topLevelMappingProcessors: Record<string, MappingProcessor>,
+  sourceParser: SourceParser<any>,
+  functionExecutor: FunctionExecutor,
+): Promise<OrArray<string>> {
+  const { [RR.predicate]: predicate, [RR.predicateMap]: predicateMap } = mapping;
+  if (predicate) {
+    return getPredicateValue(predicate);
+  }
+  if (predicateMap) {
+    return await getPredicateValueFromPredicateMap(
+      predicateMap,
+      index,
+      topLevelMappingProcessors,
+      sourceParser,
+      functionExecutor,
+    );
+  }
+  throw new Error('No predicate specified in PredicateObjectMap');
+}
+
+function hasSubjectMap(node: NodeObject): boolean {
+  return RR.subject in node || RR.subjectMap in node;
+}
+
+export function isTriplesMap(node: NodeObject): boolean {
+  return hasLogicalSource(node) && hasSubjectMap(node);
 }
