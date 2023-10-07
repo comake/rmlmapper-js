@@ -81,7 +81,12 @@ type RemoveEmptyReturnType<T extends OrArray<NodeObject>> = T extends NodeObject
 
 export function removeEmptyFromAllNodes<T extends OrArray<NodeObject>>(jsonLd: T): RemoveEmptyReturnType<T> {
   if (Array.isArray(jsonLd)) {
-    return jsonLd.map((subDoc): NodeObject => removeEmptyFromAllKeysOfNodeObject(subDoc)) as RemoveEmptyReturnType<T>;
+    return jsonLd.reduce((arr: NodeObject[], subDoc): NodeObject[] => {
+      if (subDoc) {
+        arr.push(removeEmptyFromAllKeysOfNodeObject(subDoc));
+      }
+      return arr;
+    }, []) as RemoveEmptyReturnType<T>;
   }
   return removeEmptyFromAllKeysOfNodeObject(jsonLd) as RemoveEmptyReturnType<T>;
 }
